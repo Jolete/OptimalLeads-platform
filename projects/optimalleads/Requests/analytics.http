@@ -1,0 +1,29 @@
+@host = http://127.0.0.1:8003
+@json = application/json
+
+### Health
+GET {{host}}/health
+
+### Snapshot
+GET {{host}}/snapshot
+
+### Snapshot alias
+GET {{host}}/
+
+### Ingest conversation-created event
+POST {{host}}/ingest
+Content-Type: {{json}}
+
+{
+  "event_id": "evt-001",
+  "aggregate_id": "agg-001",
+  "event_name": "ConversationCreated",
+  "event_kind": "domain",
+  "correlation_id": "corr-001",
+  "causation_id": null,
+  "occurred_at": "2026-07-01T00:00:00Z",
+  "payload": {
+    "conversation_id": "agg-001",
+    "title": "Demo"
+  }
+}

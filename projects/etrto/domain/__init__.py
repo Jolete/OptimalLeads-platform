@@ -1,0 +1,1 @@
+"""ETRTO domain layer."""

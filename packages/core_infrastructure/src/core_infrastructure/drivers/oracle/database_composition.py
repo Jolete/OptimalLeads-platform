@@ -1,0 +1,7 @@
+from __future__ import annotations
+
+from core_infrastructure.drivers.oracle.database_bootstrap import bootstrap_oracle_database
+from core_infrastructure.persistence.persistence_factory import register_database_bootstrap
+
+
+register_database_bootstrap("oracle", lambda: bootstrap_oracle_database)

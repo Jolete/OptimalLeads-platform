@@ -1,0 +1,59 @@
+@host = http://127.0.0.1:8002
+@json = application/json
+
+### Health
+GET {{host}}/health
+
+### Snapshot not available
+# Leads does not expose a snapshot endpoint.
+
+### Create lead 1
+POST {{host}}/leads
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 1",
+  "correlation_id": "lead-001"
+}
+
+### Create lead 2
+POST {{host}}/leads
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 2",
+  "correlation_id": "lead-002"
+}
+
+### Create lead 3
+POST {{host}}/leads
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 3",
+  "correlation_id": "lead-003"
+}
+
+### Create lead 4
+POST {{host}}/leads
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 4",
+  "correlation_id": "lead-004"
+}
+
+### Create lead 5
+POST {{host}}/leads
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 5",
+  "correlation_id": "lead-005"
+}
+
+### Get all leads
+GET {{host}}/leads
+
+### Get outbox entries
+GET {{host}}/outbox

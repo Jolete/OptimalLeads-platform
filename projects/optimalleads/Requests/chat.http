@@ -1,0 +1,59 @@
+@host = http://127.0.0.1:8001
+@json = application/json
+
+### Health
+GET {{host}}/health
+
+### Create conversation 1
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 1",
+  "correlation_id": "chat-001"
+}
+
+### Create conversation 2
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 2",
+  "correlation_id": "chat-002"
+}
+
+### Create conversation 3
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 3",
+  "correlation_id": "chat-003"
+}
+
+### Create conversation 4
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 4",
+  "correlation_id": "chat-004"
+}
+
+### Create conversation 5
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 5",
+  "correlation_id": "chat-005"
+}
+
+### Get all conversations
+GET {{host}}/conversations
+
+### Get outbox entries
+GET {{host}}/outbox
+
+### Flush outbox
+POST {{host}}/outbox/flush

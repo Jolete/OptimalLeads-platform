@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+
+  # dev versions of containers
+  dev: &main_default
+    container_name: pca_dev
+    build: &build_default
+      dockerfile: devops/Dockerfile
+      context: .
+      target: dev
+      args:
+        PYTHON_VERSION: 3.9
+    volumes:
+      - ./:/workspace/
+    env_file: devops/.env
+    stdin_open: true
+    tty: true
+
+  dev_py39:
+      container_name: pca_dev_py39
+      <<: *main_default
+
+  dev_py38:
+    <<: *main_default
+    container_name: pca_dev_py38
+    build:
+      <<: *build_default
+      args:
+        PYTHON_VERSION: 3.8
+
+  dev_py37:
+    <<: *main_default
+    container_name: pca_dev_py37
+    build:
+      <<: *build_default
+      args:
+        PYTHON_VERSION: 3.7
+
+  dev_py36:
+    <<: *main_default
+    container_name: pca_dev_py36
+    build:
+      <<: *build_default
+      args:
+        PYTHON_VERSION: 3.6
+
+  dev_pypy3:
+    <<: *main_default
+    container_name: pca_dev_pypy3
+    build:
+      <<: *build_default
+      args:
+        IMAGE_VERSION: pypy:3.7-slim
+        PYTHON_VERSION: 3.7
