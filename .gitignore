@@ -43,3 +43,6 @@ Thumbs.db
 # Tool caches
 .cache/
 .ipynb_checkpoints/
+
+# Large generated / external project folders
+projects/etrto-portal-server/
