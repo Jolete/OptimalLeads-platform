@@ -35,7 +35,7 @@ class TransactionBehavior(PipelineBehavior[Any]):
             except Exception as ex:
                 logger.error("Rolling back transaction for command %s due to: %s", request_name, ex)
                 await uow.rollback()
-                raise ex
+                raise
             finally:
                 _current_uow.reset(token)
 

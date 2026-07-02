@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+import logging
 from typing import Any, Callable, Generic, Iterable, TypeVar
 
 from sqlalchemy import select
@@ -11,6 +12,9 @@ from core_domain.specification import Specification
 T = TypeVar("T")
 IdType = TypeVar("IdType")
 ModelType = TypeVar("ModelType")
+
+
+logger = logging.getLogger(__name__)
 
 
 class SqlAlchemyRepository(Repository[T, IdType], Generic[T, IdType]):
@@ -42,11 +46,15 @@ class SqlAlchemyRepository(Repository[T, IdType], Generic[T, IdType]):
 
     async def add(self, entity: T) -> IdType:
         model = self._model_factory(entity)
-        self._session.add(model)
-        await self._session.flush()
-        if self._auto_commit:
-            await self._session.commit()
-        return self._extract_id(model)
+        try:
+            self._session.add(model)
+            await self._session.flush()
+            if self._auto_commit:
+                await self._session.commit()
+            return self._extract_id(model)
+        except Exception:
+            logger.exception("sqlalchemy.repository.add.failed", extra={"model_type": self._model_type.__name__})
+            raise
 
     async def get(self, id_: IdType) -> T | None:
         model = await self._session.get(self._model_type, id_)
@@ -68,9 +76,19 @@ class SqlAlchemyRepository(Repository[T, IdType], Generic[T, IdType]):
         return (await self.get(id_)) is not None
 
     async def list(self) -> list[T]:
-        result = await self._session.execute(select(self._model_type))
-        models = result.scalars().all()
-        return [self._entity_factory(model) for model in models]
+        try:
+            logger.info("sqlalchemy.repository.list.start", extra={"model_type": self._model_type.__name__})
+            result = await self._session.execute(select(self._model_type))
+            models = result.scalars().all()
+            logger.info(
+                "sqlalchemy.repository.list.rows.loaded",
+                extra={"model_type": self._model_type.__name__, "count": len(models)},
+            )
+            logger.info("sqlalchemy.repository.list.done", extra={"model_type": self._model_type.__name__, "count": len(models)})
+            return [self._entity_factory(model) for model in models]
+        except Exception:
+            logger.exception("sqlalchemy.repository.list.failed", extra={"model_type": self._model_type.__name__})
+            raise
 
     async def search(self, criteria: Specification[T]) -> list[T]:
         return [entity for entity in await self.list() if criteria.is_satisfied_by(entity)]
@@ -101,15 +119,31 @@ class SqlAlchemyRepository(Repository[T, IdType], Generic[T, IdType]):
         return (await self.first_or_none(criteria)) is not None
 
     async def all(self) -> list[T]:
-        return await self.list()
+        try:
+            logger.warning("sqlalchemy.repository.all.enter", extra={"model_type": self._model_type.__name__})
+            logger.info("sqlalchemy.repository.all.start", extra={"model_type": self._model_type.__name__})
+            entities = await self.list()
+            logger.info(
+                "sqlalchemy.repository.all.entities.loaded",
+                extra={"model_type": self._model_type.__name__, "count": len(entities)},
+            )
+            logger.info("sqlalchemy.repository.all.done", extra={"model_type": self._model_type.__name__, "count": len(entities)})
+            return entities
+        except Exception:
+            logger.exception("sqlalchemy.repository.all.failed", extra={"model_type": self._model_type.__name__})
+            raise
 
     async def delete_by_id(self, id_: IdType) -> None:
-        model = await self._session.get(self._model_type, id_)
-        if model is None:
-            return
-        await self._session.delete(model)
-        if self._auto_commit:
-            await self._session.commit()
+        try:
+            model = await self._session.get(self._model_type, id_)
+            if model is None:
+                return
+            await self._session.delete(model)
+            if self._auto_commit:
+                await self._session.commit()
+        except Exception:
+            logger.exception("sqlalchemy.repository.delete_by_id.failed", extra={"model_type": self._model_type.__name__, "id": id_})
+            raise
 
     async def delete_many(self, ids: Iterable[IdType]) -> None:
         for id_ in ids:
@@ -117,11 +151,15 @@ class SqlAlchemyRepository(Repository[T, IdType], Generic[T, IdType]):
 
     async def save(self, entity: T) -> T:
         model = self._model_factory(entity)
-        await self._session.merge(model)
-        await self._session.flush()
-        if self._auto_commit:
-            await self._session.commit()
-        return entity
+        try:
+            await self._session.merge(model)
+            await self._session.flush()
+            if self._auto_commit:
+                await self._session.commit()
+            return entity
+        except Exception:
+            logger.exception("sqlalchemy.repository.save.failed", extra={"model_type": self._model_type.__name__})
+            raise
 
     async def upsert(self, entity: T) -> T:
         model = self._model_factory(entity)

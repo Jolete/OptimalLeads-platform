@@ -18,8 +18,10 @@ class DeleteConversationUseCase:
         self._outbox = outbox
 
     async def execute(self, conversation_id: str, correlation_id: str | None = None) -> None:
+        logger.info("chat.conversation.delete.start", extra={"conversation_id": conversation_id, "correlation_id": correlation_id})
         conversation = await self._repository.get(conversation_id)
         if conversation is None:
+            logger.warning("chat.conversation.delete.not_found", extra={"conversation_id": conversation_id})
             raise ConversationNotFoundError(conversation_id)
 
         await self._repository.delete_by_id(conversation_id)
@@ -37,3 +39,4 @@ class DeleteConversationUseCase:
                 payload={"conversation_id": conversation_id},
             )
         )
+        logger.info("chat.conversation.delete.done", extra={"conversation_id": conversation_id})

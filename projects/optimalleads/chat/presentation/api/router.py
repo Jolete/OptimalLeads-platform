@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi import Query
 from pydantic import BaseModel
 
 from core_domain import ValidationError
 from projects.optimalleads.chat.application.dto import AppendMessageCommand, CreateConversationCommand
 from projects.optimalleads.chat.application.dto import DeleteConversationCommand, GetConversationQuery, ListConversationsQuery
 from projects.optimalleads.chat.application.exceptions import ConversationNotFoundError
-from projects.optimalleads.chat.application.use_cases import GetConversationUseCase, ListConversationsUseCase
-from projects.optimalleads.chat.infrastructure.persistence.bootstrap import get_chat_runtime
+from projects.optimalleads.chat.infrastructure.persistence.bootstrap import get_chat_runtime, reset_chat_runtime
 
 router = APIRouter(tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ class AppendMessageRequest(BaseModel):
 
 
 async def _get_runtime():
+    # reset_chat_runtime()
     return await get_chat_runtime()
 
 
@@ -61,13 +62,20 @@ async def health() -> dict[str, str]:
 
 @router.post("/conversations")
 async def create_conversation(payload: CreateConversationRequest) -> dict[str, object]:
+    logger.info("chat.create.endpoint.request", extra={"title": payload.title, "has_correlation_id": payload.correlation_id is not None})
     request = CreateConversationCommand(title=payload.title, correlation_id=payload.correlation_id)
-    conversation = await _run_command(request)
+    try:
+        conversation = await _run_command(request)
+    except Exception:
+        logger.exception("chat.create.endpoint.failed", extra={"title": payload.title, "has_correlation_id": payload.correlation_id is not None})
+        raise
+    logger.info("chat.create.endpoint.response", extra={"conversation_id": str(conversation.id.value)})
     return _serialize_conversation(conversation)
 
 
 @router.post("/conversations/{conversation_id}/messages")
 async def append_message(conversation_id: str, payload: AppendMessageRequest) -> dict[str, object]:
+    logger.info("chat.append.endpoint.request", extra={"conversation_id": conversation_id, "has_correlation_id": payload.correlation_id is not None})
     request = AppendMessageCommand(
         conversation_id=conversation_id,
         message=payload.message,
@@ -77,14 +85,14 @@ async def append_message(conversation_id: str, payload: AppendMessageRequest) ->
         conversation = await _run_command(request)
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    logger.info("chat.append.endpoint.response", extra={"conversation_id": conversation_id})
     return _serialize_conversation(conversation)
 
 
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(conversation_id: str) -> dict[str, object]:
-    _ = GetConversationQuery(conversation_id=conversation_id)
     runtime = await _get_runtime()
-    conversation = await GetConversationUseCase(runtime.repository).execute(conversation_id)
+    conversation = await runtime.mediator.send(GetConversationQuery(conversation_id=conversation_id))
     if conversation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
     return _serialize_conversation(conversation)
@@ -92,19 +100,27 @@ async def get_conversation(conversation_id: str) -> dict[str, object]:
 
 @router.get("/conversations")
 async def list_conversations() -> list[dict[str, object]]:
-    _ = ListConversationsQuery()
-    runtime = await _get_runtime()
-    conversations = await ListConversationsUseCase(runtime.repository).execute()
-    return [_serialize_conversation(conversation) for conversation in conversations]
+    try:
+        logger.info("chat.list.endpoint.start")
+        runtime = await _get_runtime()
+        # logger.info("chat.list.endpoint.runtime.ready", extra={"repository_type": type(runtime.repository).__name__})
+        conversations = await runtime.mediator.send(ListConversationsQuery())
+        logger.info("chat.list.endpoint.response", extra={"count": len(conversations)})
+        return [_serialize_conversation(conversation) for conversation in conversations]
+    except Exception:
+        logger.exception("chat.list.endpoint.failed")
+        raise
 
 
 @router.delete("/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str, correlation_id: str | None = None) -> dict[str, str]:
+async def delete_conversation(conversation_id: str, correlation_id: str | None = Query(default=None)) -> dict[str, str]:
+    logger.info("chat.delete.endpoint.request", extra={"conversation_id": conversation_id, "has_correlation_id": correlation_id is not None})
     request = DeleteConversationCommand(conversation_id=conversation_id, correlation_id=correlation_id)
     try:
         await _run_command(request)
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    logger.info("chat.delete.endpoint.response", extra={"conversation_id": conversation_id})
     return {"status": "deleted", "conversation_id": conversation_id}
 
 

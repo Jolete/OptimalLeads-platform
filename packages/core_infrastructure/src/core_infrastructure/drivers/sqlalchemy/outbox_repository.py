@@ -51,13 +51,19 @@ class SqlAlchemyOutboxRepository(OutboxPort, Generic[RowType]):
         if self._model_type is None or self._event_factory is None:
             raise ValueError("model_type and event_factory are required to drain outbox rows")
 
-        result = await session.execute(select(self._model_type))
-        rows = result.scalars().all()
-        events = [self._event_factory(row) for row in rows]
-        await session.execute(delete(self._model_type))
-        if self._auto_commit:
-            await session.commit()
-        return events
+        try:
+            result = await session.execute(select(self._model_type))
+            rows = result.scalars().all()
+            events = [self._event_factory(row) for row in rows]
+            await session.execute(delete(self._model_type))
+            if self._auto_commit:
+                await session.commit()
+            return events
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("sqlalchemy.outbox.drain.failed", extra={"model_type": self._model_type.__name__ if self._model_type is not None else None})
+            raise
 
     async def _resolve_session(self) -> AsyncSession:
         if self._session is not None:

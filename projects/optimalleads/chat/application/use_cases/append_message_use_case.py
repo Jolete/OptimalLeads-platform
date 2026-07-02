@@ -19,8 +19,10 @@ class AppendMessageUseCase:
         self._outbox = outbox
 
     async def execute(self, input_data: AppendMessageCommand) -> Conversation:
+        logger.info("chat.message.append.start", extra={"conversation_id": input_data.conversation_id, "correlation_id": input_data.correlation_id})
         conversation = await self._repository.get(input_data.conversation_id)
         if conversation is None:
+            logger.warning("chat.message.append.not_found", extra={"conversation_id": input_data.conversation_id})
             raise ConversationNotFoundError(input_data.conversation_id)
 
         conversation.append_message(input_data.message)
@@ -40,4 +42,5 @@ class AppendMessageUseCase:
                 payload={"conversation_id": str(event.conversation_id.value), "message": event.message.value},
             )
         )
+        logger.info("chat.message.append.done", extra={"conversation_id": input_data.conversation_id})
         return conversation

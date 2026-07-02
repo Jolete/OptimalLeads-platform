@@ -52,8 +52,14 @@ Content-Type: {{json}}
 ### Get all conversations
 GET {{host}}/conversations
 
+### Get conversation by id
+GET {{host}}/conversations/407198a5-3bd0-425d-93dd-de79d013fc31
+
 ### Get outbox entries
 GET {{host}}/outbox
 
 ### Flush outbox
 POST {{host}}/outbox/flush
+
+### Delete conversation
+DELETE {{host}}/conversations/bf1a2797-7664-4f73-9bcc-0ad4178ffae2?correlation_id=chat-regression-001
