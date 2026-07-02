@@ -64,7 +64,8 @@ Content-Type: {{json}}
   "title": "Chat CQRS 2 updated",
   "messages": [
     "Hello from CQRS 2",
-    "Second message from PUT"
+    "Second message from PUT",
+    "Third message from PUT"
   ],
   "summary": "Updated from PUT",
   "correlation_id": "chat-002-modificat"
