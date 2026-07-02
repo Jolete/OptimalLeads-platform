@@ -35,7 +35,7 @@ For more `.env` examples in memory, SQLite and SQL Server modes, see the workspa
 ## 3. Health checks
 
 ```bash
-curl http://127.0.0.1:8001/health
+curl http://127.0.0.1:8002/health
 curl http://127.0.0.1:8002/leads/health
 curl http://127.0.0.1:8003/health
 ```
@@ -46,12 +46,20 @@ Expected responses:
 - `{"service":"leads","status":"ok"}`
 - `{"service":"analytics","status":"ok"}`
 
+### Update a conversation
+
+```bash
+curl -X PUT http://127.0.0.1:8001/conversations/<conversation-id> \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Chat updated","summary":"Updated from PUT","messages":["Hello from CQRS 2","Second message from PUT"],"correlation_id":"chat-upd-001"}'
+```
+
 ## 4. Chat test flow
 
 ### Create five conversations
 
 ```bash
-curl -X POST http://127.0.0.1:8001/conversations \
+  -d '{"name":"Lead updated","stage":"qualified","notes":["First note from PUT","Second note from PUT"],"correlation_id":"lead-upd-001"}'
   -H "Content-Type: application/json" \
   -d '{"title":"Chat CQRS 1","correlation_id":"chat-001"}'
 

@@ -4,13 +4,13 @@
 ### Health
 GET {{host}}/health
 
-### Snapshot
+### Snapshot (read model)
 GET {{host}}/snapshot
 
-### Snapshot alias
+### Snapshot alias (read model)
 GET {{host}}/
 
-### Ingest conversation-created event
+### Ingest conversation-created event (event envelope sample)
 POST {{host}}/ingest
 Content-Type: {{json}}
 

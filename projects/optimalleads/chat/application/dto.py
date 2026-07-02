@@ -37,6 +37,29 @@ class AppendMessageCommand:
 
 
 @dataclass(frozen=True)
+class UpdateConversationCommand:
+    __command__ = True
+    __query__ = False
+
+    conversation_id: str
+    title: str
+    summary: str | None = None
+    messages: list[str] | None = None
+    correlation_id: str | None = None
+
+    def validate(self) -> None:
+        ConversationId.create(self.conversation_id)
+        ConversationTitle.create(self.title)
+        if self.summary is not None and not self.summary.strip():
+            raise ValidationError("Summary cannot be empty")
+        if self.messages is not None:
+            for message in self.messages:
+                ConversationMessage.create(message)
+        if self.correlation_id is not None and not self.correlation_id.strip():
+            raise ValidationError("Correlation id cannot be empty")
+
+
+@dataclass(frozen=True)
 class DeleteConversationCommand:
     __command__ = True
     __query__ = False

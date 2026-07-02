@@ -42,8 +42,8 @@ class SqlAlchemyOutboxRepository(OutboxPort, Generic[RowType]):
         row = self._row_factory(event) if self._row_factory is not None else event
         session = await self._resolve_session()
         session.add(row)
-        await session.flush()
         if self._auto_commit:
+            await session.flush()
             await session.commit()
 
     async def drain(self) -> list[EventEnvelope]:

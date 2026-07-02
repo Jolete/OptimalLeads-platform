@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from core_domain import ValidationError
 from projects.optimalleads.chat.application.dto import AppendMessageCommand, CreateConversationCommand
 from projects.optimalleads.chat.application.dto import DeleteConversationCommand, GetConversationQuery, ListConversationsQuery
+from projects.optimalleads.chat.application.dto import UpdateConversationCommand
 from projects.optimalleads.chat.application.exceptions import ConversationNotFoundError
 from projects.optimalleads.chat.infrastructure.persistence.bootstrap import get_chat_runtime, reset_chat_runtime
 
@@ -23,6 +24,13 @@ class CreateConversationRequest(BaseModel):
 
 class AppendMessageRequest(BaseModel):
     message: str
+    correlation_id: str | None = None
+
+
+class UpdateConversationRequest(BaseModel):
+    title: str
+    summary: str | None = None
+    messages: list[str] | None = None
     correlation_id: str | None = None
 
 
@@ -86,6 +94,18 @@ async def append_message(conversation_id: str, payload: AppendMessageRequest) ->
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     logger.info("chat.append.endpoint.response", extra={"conversation_id": conversation_id})
+    return _serialize_conversation(conversation)
+
+
+@router.put("/conversations/{conversation_id}")
+async def update_conversation(conversation_id: str, payload: UpdateConversationRequest) -> dict[str, object]:
+    logger.info("chat.update.endpoint.request", extra={"conversation_id": conversation_id, "has_correlation_id": payload.correlation_id is not None})
+    request = UpdateConversationCommand(conversation_id=conversation_id, title=payload.title, summary=payload.summary, messages=payload.messages, correlation_id=payload.correlation_id)
+    try:
+        conversation = await _run_command(request)
+    except ConversationNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    logger.info("chat.update.endpoint.response", extra={"conversation_id": conversation_id})
     return _serialize_conversation(conversation)
 
 

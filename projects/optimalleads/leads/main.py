@@ -1,25 +1,24 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 
 from projects.optimalleads.leads.settings import get_settings
 from telemetry import configure_telemetry
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
+from projects.optimalleads.leads.infrastructure.persistence.constants import LEADS_SERVICE_NAME, LEADS_TITLE
 from projects.optimalleads.leads.presentation.api.router import router as leads_router
 
+logger = logging.getLogger(__name__)
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    configure_telemetry("optimalleads-leads")
+    configure_telemetry(LEADS_SERVICE_NAME)
     app = FastAPI(
-        title="OptimalLeads Leads",
+        title=LEADS_TITLE,
     )
     app.include_router(leads_router)
-
-    app.state.leads_business_database_url = settings.business_database_url
-    app.state.leads_outbox_database_url = settings.effective_outbox_database_url
-    app.state.leads_audit_database_url = settings.effective_audit_database_url
-    app.state.leads_events_database_url = settings.effective_events_database_url
 
     @app.on_event("startup")
     async def startup() -> None:

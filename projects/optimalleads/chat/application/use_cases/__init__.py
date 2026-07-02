@@ -3,6 +3,7 @@ from projects.optimalleads.chat.application.use_cases.append_message_use_case im
 from projects.optimalleads.chat.application.use_cases.get_conversation_use_case import GetConversationUseCase
 from projects.optimalleads.chat.application.use_cases.list_conversations_use_case import ListConversationsUseCase
 from projects.optimalleads.chat.application.use_cases.delete_conversation_use_case import DeleteConversationUseCase
+from projects.optimalleads.chat.application.use_cases.update_conversation_use_case import UpdateConversationUseCase
 
 __all__ = [
     "CreateConversationUseCase",
@@ -10,4 +11,5 @@ __all__ = [
     "GetConversationUseCase",
     "ListConversationsUseCase",
     "DeleteConversationUseCase",
+    "UpdateConversationUseCase",
 ]

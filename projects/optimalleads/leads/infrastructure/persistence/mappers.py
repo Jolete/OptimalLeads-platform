@@ -9,7 +9,8 @@ def lead_to_row(lead: Lead) -> LeadRow:
     return LeadRow(
         id=str(lead.id.value),
         name=lead.name.value,
-        stage=lead.stage.value
+        stage=lead.stage.value,
+        notes=list(lead.notes),
     )
 
 
@@ -17,6 +18,7 @@ def row_to_lead(row: LeadRow) -> Lead:
     return Lead(
         id=LeadId.create(UUID(row.id)),
         name=LeadName.create(row.name),
-        stage=LeadStage.create(row.stage)
+        stage=LeadStage.create(row.stage),
+        notes=list(getattr(row, "notes", []) or []),
     )
 

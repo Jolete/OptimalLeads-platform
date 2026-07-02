@@ -1,6 +1,6 @@
 @host = http://127.0.0.1:8002
 @json = application/json
-@leadId = 10b927bd-1928-4009-9264-424d61653cb9
+@leadId = 3aeb3618-938e-4a48-a1a9-50f7df2617f1
 
 ### Health
 GET {{host}}/health
@@ -53,16 +53,20 @@ Content-Type: {{json}}
 ### Get all leads
 GET {{host}}/leads
 
-### Get lead by lead_id (lead_id is the resource id, correlation_id is only metadata)
+### Get lead by lead_id (lead_id is the resource id)
 GET {{host}}/leads/{{leadId}}
 
-### Update lead by lead_id (lead_id is the resource id, not the correlation_id)
+### Update lead by lead_id (lead_id is the resource id)
 PUT {{host}}/leads/{{leadId}}
 Content-Type: {{json}}
 
 {
   "name": "Lead CQRS 1 updated",
   "stage": "qualified",
+  "notes": [
+    "First note from PUT",
+    "Second note from PUT"
+  ],
   "correlation_id": "lead-001"
 }
 
@@ -75,7 +79,7 @@ Content-Type: {{json}}
   "correlation_id": "lead-001"
 }
 
-### Delete lead by lead_id (lead_id is the resource id, correlation_id is optional metadata)
+### Delete lead by lead_id (lead_id is the resource id)
 DELETE {{host}}/leads/{{leadId}}
 
 ### Get outbox entries

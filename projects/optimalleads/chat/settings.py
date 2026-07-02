@@ -5,16 +5,13 @@ from functools import lru_cache
 from pydantic_settings import SettingsConfigDict
 
 from core_infrastructure.settings.settings import BrokerSettings, PersistenceSettings
+from projects.optimalleads.chat.infrastructure.persistence.constants import CHAT_ENV_FILE
 
 
 class ChatSettings(PersistenceSettings, BrokerSettings):
-    model_config = SettingsConfigDict(env_file="projects/optimalleads/chat/.env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=CHAT_ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
     telemetry_service_name: str
-
-    @property
-    def chat_database_url(self) -> str:
-        return self.business_database_url
 
 
 @lru_cache

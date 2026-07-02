@@ -56,13 +56,18 @@ GET {{host}}/conversations
 ### Get conversation by id
 GET {{host}}/conversations/{{conversationId}}
 
-### Update conversation by id (conversation_id is the resource id)
+### Update conversation by conversation_id (conversation_id is the resource id)
 PUT {{host}}/conversations/{{conversationId}}
 Content-Type: {{json}}
 
 {
   "title": "Chat CQRS 2 updated",
-  "correlation_id": "chat-002"
+  "messages": [
+    "Hello from CQRS 2",
+    "Second message from PUT"
+  ],
+  "summary": "Updated from PUT",
+  "correlation_id": "chat-002-modificat"
 }
 
 ### Append message
@@ -80,5 +85,5 @@ GET {{host}}/outbox
 ### Flush outbox
 POST {{host}}/outbox/flush
 
-### Delete conversation by conversation_id
+### Delete conversation by conversation_id (conversation_id is the resource id)
 DELETE {{host}}/conversations/{{conversationId}}

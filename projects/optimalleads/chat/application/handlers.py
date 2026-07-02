@@ -6,6 +6,7 @@ from projects.optimalleads.chat.application.dto import (
     DeleteConversationCommand,
     GetConversationQuery,
     ListConversationsQuery,
+    UpdateConversationCommand,
 )
 from projects.optimalleads.chat.application.use_cases import (
     AppendMessageUseCase,
@@ -13,6 +14,7 @@ from projects.optimalleads.chat.application.use_cases import (
     DeleteConversationUseCase,
     GetConversationUseCase,
     ListConversationsUseCase,
+    UpdateConversationUseCase,
 )
 
 
@@ -30,6 +32,20 @@ class AppendMessageHandler:
 
     async def handle(self, request: AppendMessageCommand):
         return await self._use_case.execute(request)
+
+
+class UpdateConversationHandler:
+    def __init__(self, use_case: UpdateConversationUseCase) -> None:
+        self._use_case = use_case
+
+    async def handle(self, request: UpdateConversationCommand):
+        return await self._use_case.execute(
+            request.conversation_id,
+            request.title,
+            request.summary,
+            request.messages,
+            request.correlation_id,
+        )
 
 
 class DeleteConversationHandler:

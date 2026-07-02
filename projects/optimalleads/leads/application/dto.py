@@ -28,6 +28,7 @@ class UpdateLeadCommand:
     lead_id: str
     name: str
     stage: str | None = None
+    notes: list[str] | None = None
     correlation_id: str | None = None
 
     def validate(self) -> None:
@@ -35,6 +36,10 @@ class UpdateLeadCommand:
         LeadName.create(self.name)
         if self.stage is not None:
             LeadStage.create(self.stage)
+        if self.notes is not None:
+            for note in self.notes:
+                if not note.strip():
+                    raise ValidationError("Lead notes cannot contain empty values")
         if self.correlation_id is not None and not self.correlation_id.strip():
             raise ValidationError("Correlation id cannot be empty")
 

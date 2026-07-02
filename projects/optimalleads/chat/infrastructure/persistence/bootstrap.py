@@ -8,9 +8,9 @@ from core_infrastructure.composition_root.persistence_composition import build_b
 from core_infrastructure.drivers.sqlserver import bootstrap_sqlserver_database  # noqa: F401
 from core_infrastructure.persistence.persistence_factory import create_database_bootstrap
 from core_infrastructure.services import OutboxWorker
-from projects.optimalleads.chat.application.dto import AppendMessageCommand, CreateConversationCommand, DeleteConversationCommand, GetConversationQuery, ListConversationsQuery
-from projects.optimalleads.chat.application.handlers import AppendMessageHandler, CreateConversationHandler, DeleteConversationHandler, GetConversationHandler, ListConversationsHandler
-from projects.optimalleads.chat.application.use_cases import AppendMessageUseCase, CreateConversationUseCase, DeleteConversationUseCase, GetConversationUseCase, ListConversationsUseCase
+from projects.optimalleads.chat.application.dto import AppendMessageCommand, CreateConversationCommand, DeleteConversationCommand, GetConversationQuery, ListConversationsQuery, UpdateConversationCommand
+from projects.optimalleads.chat.application.handlers import AppendMessageHandler, CreateConversationHandler, DeleteConversationHandler, GetConversationHandler, ListConversationsHandler, UpdateConversationHandler
+from projects.optimalleads.chat.application.use_cases import AppendMessageUseCase, CreateConversationUseCase, DeleteConversationUseCase, GetConversationUseCase, ListConversationsUseCase, UpdateConversationUseCase
 from projects.optimalleads.chat.infrastructure.persistence.database import create_chat_engine, create_chat_session_factory
 from projects.optimalleads.chat.infrastructure.persistence.factory import build_chat_memory_runtime, build_chat_outbox_factory, build_chat_repository_factory, build_chat_uow_factory
 from projects.optimalleads.chat.infrastructure.persistence.settings import get_persistence_settings
@@ -50,6 +50,7 @@ async def get_chat_runtime() -> ChatRuntime:
         mediator = CqrsMediator(None)
         mediator.register_handler(CreateConversationCommand, CreateConversationHandler(CreateConversationUseCase(repository, outbox)))
         mediator.register_handler(AppendMessageCommand, AppendMessageHandler(AppendMessageUseCase(repository, outbox)))
+        mediator.register_handler(UpdateConversationCommand, UpdateConversationHandler(UpdateConversationUseCase(repository, outbox)))
         mediator.register_handler(DeleteConversationCommand, DeleteConversationHandler(DeleteConversationUseCase(repository, outbox)))
         mediator.register_handler(GetConversationQuery, GetConversationHandler(GetConversationUseCase(repository)))
         mediator.register_handler(ListConversationsQuery, ListConversationsHandler(ListConversationsUseCase(repository)))
@@ -84,6 +85,7 @@ async def get_chat_runtime() -> ChatRuntime:
     logger.info("chat.runtime.sql.command_repository.ready", extra={"repository_type": type(command_repository).__name__})
     mediator.register_handler(CreateConversationCommand, CreateConversationHandler(CreateConversationUseCase(command_repository, outbox)))
     mediator.register_handler(AppendMessageCommand, AppendMessageHandler(AppendMessageUseCase(command_repository, outbox)))
+    mediator.register_handler(UpdateConversationCommand, UpdateConversationHandler(UpdateConversationUseCase(command_repository, outbox)))
     mediator.register_handler(DeleteConversationCommand, DeleteConversationHandler(DeleteConversationUseCase(command_repository, outbox)))
     mediator.register_handler(GetConversationQuery, GetConversationHandler(GetConversationUseCase(command_repository)))
     mediator.register_handler(ListConversationsQuery, ListConversationsHandler(ListConversationsUseCase(command_repository)))

@@ -3,14 +3,11 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi import Query
 from pydantic import BaseModel
 
 from core_domain import ValidationError
 from projects.optimalleads.leads.application.dto import AdvanceLeadStageCommand, CreateLeadCommand, DeleteLeadCommand, GetLeadQuery, ListLeadsQuery, UpdateLeadCommand
-from projects.optimalleads.leads.application.use_cases import (
-    GetLeadUseCase,
-    ListLeadsUseCase,
-)
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
 
 router = APIRouter(tags=["leads"])
@@ -27,6 +24,7 @@ class CreateLeadRequest(BaseModel):
 class UpdateLeadRequest(BaseModel):
     name: str
     stage: str | None = None
+    notes: list[str] | None = None
     correlation_id: str | None = None
 
 
@@ -94,11 +92,10 @@ async def advance_stage(lead_id: str, payload: AdvanceLeadStageRequest) -> dict[
 
 @router.get("/leads/{lead_id}")
 async def get_lead(lead_id: str) -> dict[str, object]:
-    _ = GetLeadQuery(lead_id=lead_id)
     runtime = await _get_runtime()
-    lead = await GetLeadUseCase(runtime.repository).execute(lead_id)
+    lead = await runtime.mediator.send(GetLeadQuery(lead_id=lead_id))
     if lead is None:
-        return {"lead_id": lead_id, "name": "", "stage": "", "notes": []}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     return {
         "id": str(lead.id.value),
         "name": lead.name.value,
@@ -109,11 +106,10 @@ async def get_lead(lead_id: str) -> dict[str, object]:
 
 @router.get("/leads")
 async def list_leads() -> list[dict[str, object]]:
-    _ = ListLeadsQuery()
     runtime = await _get_runtime()
     logger.info("leads.list.request")
     try:
-        leads = await ListLeadsUseCase(runtime.repository).execute()
+        leads = await runtime.mediator.send(ListLeadsQuery())
     except Exception:
         logger.exception("leads.list.failed")
         raise
@@ -131,13 +127,13 @@ async def list_leads() -> list[dict[str, object]]:
 
 @router.put("/leads/{lead_id}")
 async def update_lead(lead_id: str, payload: UpdateLeadRequest) -> dict[str, object]:
-    request = UpdateLeadCommand(lead_id=lead_id, name=payload.name, stage=payload.stage, correlation_id=payload.correlation_id)
+    request = UpdateLeadCommand(lead_id=lead_id, name=payload.name, stage=payload.stage, notes=payload.notes, correlation_id=payload.correlation_id)
     lead = await _run_command(request)
     return _serialize_lead(lead)
 
 
 @router.delete("/leads/{lead_id}")
-async def delete_lead(lead_id: str, correlation_id: str | None = None) -> dict[str, str]:
+async def delete_lead(lead_id: str, correlation_id: str | None = Query(default=None)) -> dict[str, str]:
     request = DeleteLeadCommand(lead_id=lead_id, correlation_id=correlation_id)
     try:
         await _run_command(request)

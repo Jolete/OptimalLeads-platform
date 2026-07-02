@@ -24,11 +24,13 @@ def build_chat_repository_factory(session_factory: Callable[[], object]) -> Call
         entity_factory=lambda row: Conversation(
             id=ConversationId.create(UUID(row.conversation_id)),
             title=ConversationTitle.create(row.title),
+            summary=row.summary,
             messages=list(row.messages),
         ),
         model_factory=lambda conversation: ConversationRow(
             conversation_id=str(conversation.id.value),
             title=conversation.title.value,
+            summary=conversation.summary,
             messages=list(conversation.messages),
         ),
         id_extractor=lambda row: row.conversation_id,
@@ -78,11 +80,13 @@ def build_chat_uow_factory(session_factory: Callable[[], object]) -> Callable[[]
                 entity_factory=lambda row: Conversation(
                     id=ConversationId.create(UUID(row.conversation_id)),
                     title=ConversationTitle.create(row.title),
+                    summary=row.summary,
                     messages=list(row.messages),
                 ),
                 model_factory=lambda conversation: ConversationRow(
                     conversation_id=str(conversation.id.value),
                     title=conversation.title.value,
+                    summary=conversation.summary,
                     messages=list(conversation.messages),
                 ),
                 id_extractor=lambda row: row.conversation_id,

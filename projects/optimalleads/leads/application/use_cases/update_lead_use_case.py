@@ -15,7 +15,7 @@ class UpdateLeadUseCase:
         self._repository = repository
         self._outbox = outbox
 
-    async def execute(self, lead_id: str, name: str, stage: str | None = None, correlation_id: str | None = None) -> Lead:
+    async def execute(self, lead_id: str, name: str, stage: str | None = None, notes: list[str] | None = None, correlation_id: str | None = None) -> Lead:
         lead = await self._repository.get(lead_id)
         if lead is None:
             raise KeyError(lead_id)
@@ -23,6 +23,8 @@ class UpdateLeadUseCase:
         lead.name = LeadName.create(name)
         if stage is not None:
             lead.change_stage(LeadStage.create(stage))
+        if notes is not None:
+            lead.notes = list(notes)
         await self._repository.save(lead)
         correlation_id = correlation_id or lead_id
         logger.info("leads.updated", extra={"lead_id": lead_id, "correlation_id": correlation_id})
@@ -33,7 +35,7 @@ class UpdateLeadUseCase:
                 event_name="LeadUpdated",
                 correlation_id=correlation_id,
                 causation_id=None,
-                payload={"lead_id": lead_id, "name": name, "stage": lead.stage.value},
+                payload={"lead_id": lead_id, "name": lead.name.value, "stage": lead.stage.value, "notes": list(lead.notes)},
             )
         )
         return lead
