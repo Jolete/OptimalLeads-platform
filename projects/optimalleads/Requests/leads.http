@@ -1,11 +1,9 @@
 @host = http://127.0.0.1:8002
 @json = application/json
+@leadId = 10b927bd-1928-4009-9264-424d61653cb9
 
 ### Health
 GET {{host}}/health
-
-### Snapshot not available
-# Leads does not expose a snapshot endpoint.
 
 ### Create lead 1
 POST {{host}}/leads
@@ -55,5 +53,33 @@ Content-Type: {{json}}
 ### Get all leads
 GET {{host}}/leads
 
+### Get lead by lead_id (lead_id is the resource id, correlation_id is only metadata)
+GET {{host}}/leads/{{leadId}}
+
+### Update lead by lead_id (lead_id is the resource id, not the correlation_id)
+PUT {{host}}/leads/{{leadId}}
+Content-Type: {{json}}
+
+{
+  "name": "Lead CQRS 1 updated",
+  "stage": "qualified",
+  "correlation_id": "lead-001"
+}
+
+### Advance lead stage
+POST {{host}}/leads/{{leadId}}/stage
+Content-Type: {{json}}
+
+{
+  "stage": "contacted",
+  "correlation_id": "lead-001"
+}
+
+### Delete lead by lead_id (lead_id is the resource id, correlation_id is optional metadata)
+DELETE {{host}}/leads/{{leadId}}
+
 ### Get outbox entries
 GET {{host}}/outbox
+
+### Flush outbox
+POST {{host}}/outbox/flush

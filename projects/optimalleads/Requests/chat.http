@@ -1,5 +1,6 @@
 @host = http://127.0.0.1:8001
 @json = application/json
+@conversationId = 08f452de-c4a5-441e-bf85-27b7afcfdf5b
 
 ### Health
 GET {{host}}/health
@@ -53,7 +54,25 @@ Content-Type: {{json}}
 GET {{host}}/conversations
 
 ### Get conversation by id
-GET {{host}}/conversations/407198a5-3bd0-425d-93dd-de79d013fc31
+GET {{host}}/conversations/{{conversationId}}
+
+### Update conversation by id (conversation_id is the resource id)
+PUT {{host}}/conversations/{{conversationId}}
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 2 updated",
+  "correlation_id": "chat-002"
+}
+
+### Append message
+POST {{host}}/conversations/{{conversationId}}/messages
+Content-Type: {{json}}
+
+{
+  "message": "Hello from CQRS",
+  "correlation_id": "chat-001"
+}
 
 ### Get outbox entries
 GET {{host}}/outbox
@@ -61,5 +80,5 @@ GET {{host}}/outbox
 ### Flush outbox
 POST {{host}}/outbox/flush
 
-### Delete conversation
-DELETE {{host}}/conversations/bf1a2797-7664-4f73-9bcc-0ad4178ffae2?correlation_id=chat-regression-001
+### Delete conversation by conversation_id
+DELETE {{host}}/conversations/{{conversationId}}
