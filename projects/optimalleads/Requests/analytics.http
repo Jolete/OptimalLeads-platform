@@ -27,3 +27,27 @@ Content-Type: {{json}}
     "title": "Demo"
   }
 }
+
+### Ingest lead-created event (event envelope sample)
+POST {{host}}/ingest
+Content-Type: {{json}}
+
+{
+  "event_id": "evt-002",
+  "aggregate_id": "lead-001",
+  "event_name": "LeadCreated",
+  "event_kind": "domain",
+  "correlation_id": "corr-002",
+  "causation_id": null,
+  "occurred_at": "2026-07-01T00:00:00Z",
+  "payload": {
+    "lead_id": "lead-001",
+    "name": "Demo lead"
+  }
+}
+
+### Get outbox entries
+GET {{host}}/outbox
+
+### Flush outbox
+POST {{host}}/outbox/flush
