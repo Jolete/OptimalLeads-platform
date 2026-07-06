@@ -1,0 +1,75 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "OptimalLeads: Chat",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "projects.optimalleads.chat.main:create_app",
+        "--factory",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001"
+      ],
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "envFile": "${workspaceFolder}/projects/optimalleads/chat/.env",
+      "preLaunchTask": "bootstrap-optimalleads-env"
+    },
+    {
+      "name": "OptimalLeads: Leads",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "projects.optimalleads.leads.main:create_app",
+        "--factory",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8002"
+      ],
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "envFile": "${workspaceFolder}/projects/optimalleads/leads/.env",
+      "preLaunchTask": "bootstrap-optimalleads-env"
+    },
+    {
+      "name": "OptimalLeads: Analytics",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "projects.optimalleads.analytics.main:create_app",
+        "--factory",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8003"
+      ],
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "envFile": "${workspaceFolder}/projects/optimalleads/analytics/.env",
+      "preLaunchTask": "bootstrap-optimalleads-env"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "🚀 DEBUG TOT EL BACKEND",
+      "configurations": [
+        "OptimalLeads: Chat",
+        "OptimalLeads: Leads",
+        "OptimalLeads: Analytics"
+      ]
+    }
+  ]
+}

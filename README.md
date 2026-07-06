@@ -72,6 +72,18 @@ Tots els serveis llegeixen la configuració dels seus fitxers `.env` propis. Usa
 & f:\Projects\QUANTION\Phyton\.venv\Scripts\python.exe -m uvicorn bootstrap:app --reload --port 8080
 ```
 
+Si estrenes el repo en una altra màquina, primer executa el bootstrap de dependències equivalent a un `npm install` o `dotnet restore`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-optimalleads-deps.ps1
+```
+
+Després ja pots usar el launcher de workspace, que també el crida automàticament:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\.vscode\start-workspace.ps1
+```
+
 ### Chat
 
 ```powershell
@@ -92,11 +104,23 @@ Tots els serveis llegeixen la configuració dels seus fitxers `.env` propis. Usa
 
 ## Configuració `.env`
 
-Cada microservei d'OptimalLeads carrega el seu propi `.env`:
+Cada microservei d'OptimalLeads carrega el seu propi `.env` local o de plantilla, segons el cas:
 
 - [projects/optimalleads/chat/.env](projects/optimalleads/chat/.env)
 - [projects/optimalleads/leads/.env](projects/optimalleads/leads/.env)
 - [projects/optimalleads/analytics/.env](projects/optimalleads/analytics/.env)
+
+Els fitxers de plantilla i els valors de prova que ara queden versionats són aquests:
+
+- [projects/optimalleads/chat/.env.example](projects/optimalleads/chat/.env.example)
+- [projects/optimalleads/leads/.env.example](projects/optimalleads/leads/.env.example)
+- [projects/optimalleads/analytics/.env.example](projects/optimalleads/analytics/.env.example)
+
+Si canvies d'ordinador, el flux recomanat és:
+
+1. Clonar el repo.
+2. Executar el task o script de bootstrap si vols regenerar el workspace local.
+3. Ajustar les credencials locals a cada `.env` si estàs treballant fora de la plantilla.
 
 El valor de `PERSISTENCE_PROVIDER` surt del `.env` i el CORE decideix quin driver/bootstrapping usar. No cal tocar codi per canviar de backend.
 

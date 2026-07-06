@@ -21,7 +21,12 @@ dist/
 *.egg
 
 # IDE / editor
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/start-workspace.ps1
 .idea/
 *.code-workspace
 
@@ -29,6 +34,12 @@ dist/
 .env
 .env.*
 !.env.example
+!projects/optimalleads/chat/.env
+!projects/optimalleads/leads/.env
+!projects/optimalleads/analytics/.env
+!projects/optimalleads/chat/.env.example
+!projects/optimalleads/leads/.env.example
+!projects/optimalleads/analytics/.env.example
 
 # Logs and runtime data
 logs/
