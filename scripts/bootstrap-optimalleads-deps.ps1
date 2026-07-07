@@ -53,3 +53,5 @@ if ($needsInstall) {
         Invoke-PythonCommand -PythonPath $venvPython -Arguments @('-m', 'pip', 'install', '--upgrade', 'pip')
         Invoke-PythonCommand -PythonPath $venvPython -Arguments @('-m', 'pip', 'install', '-e', '.[dev]')
 }
+
+& (Join-Path $workspaceRoot 'scripts\bootstrap-optimalleads-vscode.ps1')

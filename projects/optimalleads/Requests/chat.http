@@ -1,6 +1,6 @@
 @host = http://127.0.0.1:8001
 @json = application/json
-@conversationId = 08f452de-c4a5-441e-bf85-27b7afcfdf5b
+@conversationId = 46bf634a-91c1-4ea0-92de-825e8bb99a2b
 
 ### Health
 GET {{host}}/health

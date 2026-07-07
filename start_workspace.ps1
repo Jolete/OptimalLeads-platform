@@ -12,11 +12,13 @@ $jobs = @(
 )
 
 foreach ($job in $jobs) {
-	Start-Job -Name $job.Name -ScriptBlock {
-		param($pythonPath, $workingDir, $arguments, $logPath)
-		Set-Location $workingDir
-		& $pythonPath @arguments *>> $logPath
-	} -ArgumentList $pythonExe, $workspaceRoot, $job.Args, $job.Log | Out-Null
+	$argumentList = @(
+		'-NoProfile',
+		'-ExecutionPolicy',
+		'Bypass',
+		'-Command',
+		"Set-Location '$workspaceRoot'; & '$pythonExe' $($job.Args -join ' ') *>> '$($job.Log)'")
+	Start-Process -WindowStyle Normal -FilePath powershell -ArgumentList $argumentList -WorkingDirectory $workspaceRoot | Out-Null
 }
 
 Start-Process 'http://127.0.0.1:8080/'

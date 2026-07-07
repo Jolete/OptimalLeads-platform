@@ -58,6 +58,19 @@ from projects.optimalleads.main import create_app
 app = create_app()
 ```
 
+## Extensió per `.http`
+
+Per executar els fitxers `.http` directament a VS Code i veure el botó `Send Request`, cal tenir una extensió de client REST instal·lada. La que he trobat més adequada per aquest workspace és:
+
+- [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)
+
+Alternatives que també vaig trobar, però no són les que fan servir ara mateix els fitxers del workspace:
+
+- [HTTP Client](https://marketplace.visualstudio.com/items?itemName=mkloubert.vscode-http-client)
+- [Simple REST Client](https://marketplace.visualstudio.com/items?itemName=tino.simple-rest-client)
+
+El workspace també ho recomana automàticament amb [.vscode/extensions.json](.vscode/extensions.json).
+
 ## Com arrencar OptimalLeads
 
 Tots els serveis llegeixen la configuració dels seus fitxers `.env` propis. Usa sempre la venv del workspace:
@@ -81,7 +94,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-optimall
 Després ja pots usar el launcher de workspace, que també el crida automàticament:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\.vscode\start-workspace.ps1
+.\start_workspace.cmd
 ```
 
 ### Chat
@@ -166,7 +179,7 @@ TELEMETRY_SERVICE_NAME=optimalleads-chat
 ```env
 PERSISTENCE_PROVIDER=sqlserver
 RESET_DATABASE_ON_STARTUP=false
-BUSINESS_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:1433/optimalleads_chat?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
+BUSINESS_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:14331/optimalleads_chat?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
 OUTBOX_DATABASE_URL=
 AUDIT_DATABASE_URL=
 EVENTS_DATABASE_URL=
@@ -183,9 +196,9 @@ TELEMETRY_SERVICE_NAME=optimalleads-chat
 ```env
 PERSISTENCE_PROVIDER=sqlserver
 RESET_DATABASE_ON_STARTUP=false
-BUSINESS_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:1433/optimalleads_chat?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
+BUSINESS_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:14331/optimalleads_chat?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
 OUTBOX_DATABASE_URL=
-AUDIT_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:1433/optimalleads_audit?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
+AUDIT_DATABASE_URL=mssql+aioodbc://sa:Password12345@localhost:14331/optimalleads_audit?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes
 EVENTS_DATABASE_URL=
 BROKER_PROVIDER=faststream_kafka
 BROKER_URL=localhost:9092
