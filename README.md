@@ -7,7 +7,7 @@ Aquest workspace conté dos projectes al mateix nivell:
 - [projects/etrto](projects/etrto) és un altre projecte independent
 
 El root [main.py](main.py) només actua com a índex de projectes. La documentació funcional d'OptimalLeads viu a [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) i [docs/PRINCIPLES.md](docs/PRINCIPLES.md).
-La guia operativa del dia a dia és a [docs/OPTIMALLEADS_OPERATIONS.md](docs/OPTIMALLEADS_OPERATIONS.md).
+La guia operativa del dia a dia és a [docs/OPTIMALLEADS_OPERATIONS.md](docs/OPTIMALLEADS_OPERATIONS.md). La guia de logging, traces i backends d'observability és a [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md).
 
 ## Què arrenca cada cosa
 

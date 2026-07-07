@@ -9,10 +9,12 @@ from fastapi.responses import HTMLResponse
 from projects.optimalleads.analytics.presentation.api.router import router as analytics_router
 from projects.optimalleads.chat.presentation.api.router import router as chat_router
 from projects.optimalleads.leads.presentation.api.router import router as leads_router
+from telemetry import configure_http_tracing
 
 
 def create_app(projects: list[str] | None = None) -> FastAPI:
     app = FastAPI(title="Quantion Workspace")
+    configure_http_tracing(app)
 
     def _service_routes(router) -> list[APIRoute]:
         return [route for route in router.routes if isinstance(route, APIRoute) and route.path != "/"]

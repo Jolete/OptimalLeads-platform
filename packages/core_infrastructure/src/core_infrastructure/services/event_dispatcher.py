@@ -5,9 +5,12 @@ from collections.abc import Awaitable, Callable
 
 from core_domain import EventEnvelope, EventKind
 from core_domain.messaging import MessageBrokerPort
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 EventHandler = Callable[[EventEnvelope], Awaitable[None]]
 
 
@@ -25,8 +28,18 @@ class EventDispatcher:
             logger.debug("No event handler registered for %s (%s)", event.event_name, event.event_kind)
             return False
 
-        await handler(event)
-        return True
+        with tracer.start_as_current_span(f"event.dispatch.{event.event_name}") as span:
+            span.set_attribute("event.name", event.event_name)
+            span.set_attribute("event.kind", event.event_kind.value)
+            span.set_attribute("event.aggregate_id", event.aggregate_id)
+            span.set_attribute("event.correlation_id", event.correlation_id)
+            try:
+                await handler(event)
+                return True
+            except Exception as error:
+                span.record_exception(error)
+                span.set_status(Status(StatusCode.ERROR, str(error)))
+                raise
 
 
 def create_broker_dispatcher(broker: MessageBrokerPort) -> EventDispatcher:

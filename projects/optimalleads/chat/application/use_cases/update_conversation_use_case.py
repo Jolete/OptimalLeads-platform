@@ -6,11 +6,14 @@ from uuid import uuid4
 
 from core_domain import EventEnvelope, EventKind, Repository
 from core_domain.pipeline.transaction_behavior import get_current_unit_of_work
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from projects.optimalleads.chat.application.exceptions import ConversationNotFoundError
 from projects.optimalleads.chat.application.ports import ChatOutboxPort
 from projects.optimalleads.chat.domain.conversation import Conversation, ConversationId, ConversationMessage, ConversationTitle
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 class UpdateConversationUseCase:
@@ -33,38 +36,78 @@ class UpdateConversationUseCase:
         return uow.get_repository("outbox")  # type: ignore[return-value]
 
     async def execute(self, conversation_id: str, title: str, summary: str | None = None, messages: list[str] | None = None, correlation_id: str | None = None) -> Conversation:
-        logger.info("chat.conversation.update.start", extra={"conversation_id": conversation_id, "correlation_id": correlation_id})
-        repository = self._resolve_repository()
-        outbox = self._resolve_outbox()
-        logger.info("chat.conversation.update.repository.resolved", extra={"conversation_id": conversation_id, "has_messages": messages is not None})
-        conversation = await repository.get(conversation_id)
-        if conversation is None:
-            raise ConversationNotFoundError(conversation_id)
+        with tracer.start_as_current_span("chat.conversation.update") as span:
+            span.set_attribute("conversation_id", conversation_id)
+            span.set_attribute("chat.title", title)
+            if correlation_id is not None:
+                span.set_attribute("correlation_id", correlation_id)
 
-        logger.info("chat.conversation.update.entity.loaded", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        conversation.update_title(title)
-        conversation.update_summary(summary)
-        if messages is not None:
-            validated_messages = [ConversationMessage.create(message).value for message in messages]
-            conversation.update_messages(validated_messages)
-            logger.info("chat.conversation.update.messages.assigned", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        logger.info("chat.conversation.update.before_save", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        await repository.save(conversation)
-        logger.info("chat.conversation.update.after_save", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        correlation_id = correlation_id or conversation_id
-        logger.info("chat.conversation.updated", extra={"conversation_id": conversation_id, "correlation_id": correlation_id})
-        logger.info("chat.conversation.update.before_outbox", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        await outbox.add(
-            EventEnvelope(
-                event_id=str(uuid4()),
-                aggregate_id=conversation_id,
-                event_name="ConversationUpdated",
-                event_kind=EventKind.DOMAIN,
-                correlation_id=correlation_id,
-                causation_id=None,
-                occurred_at=datetime.now(timezone.utc).isoformat(),
-                payload={"conversation_id": conversation_id, "title": conversation.title.value, "summary": conversation.summary, "messages": list(conversation.messages)},
+            logger.info(
+                "chat.conversation.update.start",
+                extra={"conversation_id": conversation_id, "correlation_id": correlation_id},
             )
-        )
-        logger.info("chat.conversation.update.after_outbox", extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)})
-        return conversation
+            repository = self._resolve_repository()
+            outbox = self._resolve_outbox()
+            span.set_attribute("repository.type", type(repository).__name__)
+            span.set_attribute("outbox.type", type(outbox).__name__)
+            logger.info(
+                "chat.conversation.update.repository.resolved",
+                extra={"conversation_id": conversation_id, "has_messages": messages is not None},
+            )
+            conversation = await repository.get(conversation_id)
+            if conversation is None:
+                error = ConversationNotFoundError(conversation_id)
+                span.record_exception(error)
+                span.set_status(Status(StatusCode.ERROR, str(error)))
+                logger.warning("chat.conversation.update.not_found", extra={"conversation_id": conversation_id})
+                raise error
+
+            logger.info(
+                "chat.conversation.update.entity.loaded",
+                extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+            )
+            conversation.update_title(title)
+            conversation.update_summary(summary)
+            if messages is not None:
+                validated_messages = [ConversationMessage.create(message).value for message in messages]
+                conversation.update_messages(validated_messages)
+                logger.info(
+                    "chat.conversation.update.messages.assigned",
+                    extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+                )
+            logger.info(
+                "chat.conversation.update.before_save",
+                extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+            )
+            await repository.save(conversation)
+            logger.info(
+                "chat.conversation.update.after_save",
+                extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+            )
+            correlation_id = correlation_id or conversation_id
+            span.set_attribute("resolved.correlation_id", correlation_id)
+            logger.info(
+                "chat.conversation.updated",
+                extra={"conversation_id": conversation_id, "correlation_id": correlation_id},
+            )
+            logger.info(
+                "chat.conversation.update.before_outbox",
+                extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+            )
+            await outbox.add(
+                EventEnvelope(
+                    event_id=str(uuid4()),
+                    aggregate_id=conversation_id,
+                    event_name="ConversationUpdated",
+                    event_kind=EventKind.DOMAIN,
+                    correlation_id=correlation_id,
+                    causation_id=None,
+                    occurred_at=datetime.now(timezone.utc).isoformat(),
+                    payload={"conversation_id": conversation_id, "title": conversation.title.value, "summary": conversation.summary, "messages": list(conversation.messages)},
+                )
+            )
+            logger.info(
+                "chat.conversation.update.after_outbox",
+                extra={"conversation_id": conversation_id, "message_count": len(conversation.messages)},
+            )
+            return conversation

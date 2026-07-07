@@ -5,11 +5,15 @@ from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from typing import Any
 
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
+
 from core_domain.pipeline.pipeline_behavior import PipelineBehavior
 from core_domain.unit_of_work import UnitOfWork
 
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 _current_uow: ContextVar[UnitOfWork | None] = ContextVar("current_unit_of_work", default=None)
 
 
@@ -22,22 +26,25 @@ class TransactionBehavior(PipelineBehavior[Any]):
             return await next_handler()
 
         request_name = type(request).__name__
-        logger.info("Starting database transaction for command %s", request_name)
-        uow = self._uow_provider()
-        token = _current_uow.set(uow)
+        with tracer.start_as_current_span(f"db.transaction.{request_name}") as span:
+            logger.info("Starting database transaction for command %s", request_name)
+            uow = self._uow_provider()
+            token = _current_uow.set(uow)
 
-        async with uow:
-            try:
-                response = await next_handler()
-                await uow.commit()
-                logger.info("Committed database transaction for command %s", request_name)
-                return response
-            except Exception as ex:
-                logger.error("Rolling back transaction for command %s due to: %s", request_name, ex)
-                await uow.rollback()
-                raise
-            finally:
-                _current_uow.reset(token)
+            async with uow:
+                try:
+                    response = await next_handler()
+                    await uow.commit()
+                    logger.info("Committed database transaction for command %s", request_name)
+                    return response
+                except Exception as ex:
+                    span.record_exception(ex)
+                    span.set_status(Status(StatusCode.ERROR, str(ex)))
+                    logger.error("Rolling back transaction for command %s due to: %s", request_name, ex)
+                    await uow.rollback()
+                    raise
+                finally:
+                    _current_uow.reset(token)
 
 
 def get_current_unit_of_work() -> UnitOfWork:
