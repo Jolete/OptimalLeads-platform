@@ -154,7 +154,9 @@ async def get_outbox() -> list[dict[str, object]]:
 async def flush_outbox() -> dict[str, int]:
     runtime = await _get_runtime()
     if runtime.outbox_worker is None:
-        published = len(await runtime.outbox.drain())
+        events = await runtime.outbox.drain()
+        await runtime.outbox.mark_published(events)
+        published = len(events)
     else:
         published = await runtime.outbox_worker.flush()
     return {"published": published}

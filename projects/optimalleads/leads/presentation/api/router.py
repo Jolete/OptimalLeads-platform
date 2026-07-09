@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from core_domain import ValidationError
 from projects.optimalleads.leads.application.dto import AdvanceLeadStageCommand, CreateLeadCommand, DeleteLeadCommand, GetLeadQuery, ListLeadsQuery, UpdateLeadCommand
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
+from projects.optimalleads.leads.presentation.contracts import CreateLeadFromConversationRequest
 
 router = APIRouter(tags=["leads"])
 logger = logging.getLogger(__name__)
@@ -19,6 +20,10 @@ _runtime = None
 class CreateLeadRequest(BaseModel):
     name: str
     correlation_id: str | None = None
+
+
+class InternalCreateLeadRequest(CreateLeadFromConversationRequest):
+    pass
 
 
 class UpdateLeadRequest(BaseModel):
@@ -80,6 +85,25 @@ async def create_lead(payload: CreateLeadRequest) -> dict[str, object]:
         logger.exception("leads.create.failed", extra={"has_correlation_id": payload.correlation_id is not None})
         raise
     logger.info("leads.create.success", extra={"lead_id": str(lead.id.value)})
+    return _serialize_lead(lead)
+
+
+@router.post("/internal/leads/from-conversation")
+async def create_lead_from_conversation(payload: InternalCreateLeadRequest) -> dict[str, object]:
+    logger.info(
+        "leads.internal.create.request",
+        extra={"conversation_id": payload.conversation_id, "has_correlation_id": True},
+    )
+    request = CreateLeadCommand(
+        name=f"Lead from conversation: {payload.title}",
+        correlation_id=payload.correlation_id,
+    )
+    try:
+        lead = await _run_command(request)
+    except Exception:
+        logger.exception("leads.internal.create.failed", extra={"conversation_id": payload.conversation_id})
+        raise
+    logger.info("leads.internal.create.success", extra={"lead_id": str(lead.id.value), "conversation_id": payload.conversation_id})
     return _serialize_lead(lead)
 
 
@@ -152,7 +176,9 @@ async def outbox_view() -> list[dict[str, object]]:
 async def flush_outbox() -> dict[str, int]:
     runtime = await _get_runtime()
     if runtime.outbox_worker is None:
-        published = len(await runtime.outbox.drain())
+        events = await runtime.outbox.drain()
+        await runtime.outbox.mark_published(events)
+        published = len(events)
     else:
         published = await runtime.outbox_worker.flush()
     return {"published": published}

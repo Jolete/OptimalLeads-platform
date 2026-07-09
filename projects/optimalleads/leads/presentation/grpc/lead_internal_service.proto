@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package optimalleads.leads.presentation.grpc;
+
+message CreateLeadFromConversationRequest {
+  string conversation_id = 1;
+  string title = 2;
+  string correlation_id = 3;
+}
+
+message LeadResponse {
+  string id = 1;
+  string name = 2;
+  string stage = 3;
+  repeated string notes = 4;
+}
+
+service LeadsInternalService {
+  rpc CreateLeadFromConversation(CreateLeadFromConversationRequest) returns (LeadResponse);
+}

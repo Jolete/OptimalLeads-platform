@@ -229,7 +229,7 @@ L'escenari recomanat per arrencar i provar ara mateix és `sqlserver` als tres s
 ### Base de dades a SQL Server Management Studio
 
 - Chat: `optimalleads_chat`
-- Leads: `optimalleads_leads`
+- Leads: `optimalleads_leads`   
 - Analytics: `optimalleads_analytics`
 
 Connexió típica:

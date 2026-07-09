@@ -5,9 +5,9 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 
 from core_domain import ValidationBehavior, ValidationError
-from core_domain.contracts import EventEnvelope
 from projects.optimalleads.analytics.application.dto import IngestEventCommand, ReadSnapshotQuery
 from projects.optimalleads.analytics.infrastructure.persistence.bootstrap import get_analytics_runtime
+from projects.optimalleads.analytics.presentation.contracts import IngestEventRequest
 
 router = APIRouter(tags=["analytics"])
 logger = logging.getLogger(__name__)
@@ -24,10 +24,6 @@ async def _get_runtime():
 
 async def _noop() -> None:
     return None
-
-
-class IngestEventRequest(EventEnvelope):
-    pass
 
 
 async def _validate_command(request) -> None:
@@ -59,12 +55,21 @@ async def health() -> dict[str, str]:
     return {"service": "analytics", "status": "ok"}
 
 
-@router.post("/ingest")
-async def ingest(event: IngestEventRequest) -> dict[str, str]:
+async def _ingest(event: IngestEventRequest) -> dict[str, str]:
     logger.info("analytics.ingest.request", extra={"event_name": event.event_name, "aggregate_id": event.aggregate_id, "correlation_id": event.correlation_id})
-    request = IngestEventCommand(event=event)
+    request = IngestEventCommand(event=IngestEventRequest.model_validate(event.model_dump()))
     await _run_command(request, lambda: _send(request))
     return {"status": "ingested"}
+
+
+@router.post("/internal/events")
+async def ingest_internal(event: IngestEventRequest) -> dict[str, str]:
+    return await _ingest(event)
+
+
+@router.post("/ingest")
+async def ingest(event: IngestEventRequest) -> dict[str, str]:
+    return await _ingest(event)
 
 
 async def _read_snapshot() -> dict[str, object]:
@@ -103,16 +108,10 @@ async def get_all() -> dict[str, object]:
 
 @router.get("/outbox")
 async def get_outbox() -> list[dict[str, object]]:
-    runtime = await _get_runtime()
-    return [event.model_dump() for event in await runtime.outbox.drain()]
+    return []
 
 
 @router.post("/outbox/flush")
 async def flush_outbox() -> dict[str, int]:
-    runtime = await _get_runtime()
-    if runtime.outbox_worker is None:
-        published = len(await runtime.outbox.drain())
-    else:
-        published = await runtime.outbox_worker.flush()
-    return {"published": published}
+    return {"published": 0}
 

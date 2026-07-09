@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from core_domain.messaging import OutboxPort
@@ -19,6 +20,7 @@ class OutboxWorker:
     async def flush(self) -> int:
         events = await self._outbox.drain()
         published = 0
+        published_events = []
 
         for event in events:
             with tracer.start_as_current_span(f"outbox.publish.{event.event_name}") as span:
@@ -31,5 +33,21 @@ class OutboxWorker:
                 )
                 if await self._dispatcher.dispatch(event):
                     published += 1
+                    published_events.append(event)
+
+        await self._outbox.mark_published(published_events)
 
         return published
+
+
+async def run_periodic_outbox_flush(outbox_worker: OutboxWorker, interval_seconds: float) -> None:
+    logger.info("outbox.worker.started", extra={"interval_seconds": interval_seconds})
+    while True:
+        try:
+            await outbox_worker.flush()
+        except asyncio.CancelledError:
+            logger.info("outbox.worker.stopped")
+            raise
+        except Exception:
+            logger.exception("outbox.worker.failed")
+        await asyncio.sleep(interval_seconds)

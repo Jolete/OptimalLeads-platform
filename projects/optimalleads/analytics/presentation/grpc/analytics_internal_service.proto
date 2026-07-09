@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package optimalleads.analytics.presentation.grpc;
+
+import "google/protobuf/struct.proto";
+
+message IngestEventRequest {
+  string event_id = 1;
+  string aggregate_id = 2;
+  string event_name = 3;
+  string event_kind = 4;
+  string correlation_id = 5;
+  string causation_id = 6;
+  string occurred_at = 7;
+  google.protobuf.Struct payload = 8;
+}
+
+message IngestEventResponse {
+  string status = 1;
+}
+
+service AnalyticsInternalService {
+  rpc IngestEvent(IngestEventRequest) returns (IngestEventResponse);
+}

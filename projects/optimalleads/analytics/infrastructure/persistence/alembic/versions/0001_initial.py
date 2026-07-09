@@ -13,7 +13,7 @@ def upgrade() -> None:
     op.create_table(
         "projections",
         sa.Column("id", sa.String(length=36), primary_key=True, nullable=False),
-        sa.Column("name", sa.String(length=200), nullable=False),
+        sa.Column("name", sa.Text(), nullable=False),
         sa.Column("category", sa.String(length=200), nullable=False),
     )
 

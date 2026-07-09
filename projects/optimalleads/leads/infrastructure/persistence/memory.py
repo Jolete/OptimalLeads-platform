@@ -56,5 +56,8 @@ class MemoryLeadsOutbox(LeadsOutboxPort):
 
     async def drain(self) -> list[EventEnvelope]:
         events = list(self._events)
-        self._events.clear()
         return events
+
+    async def mark_published(self, events: list[EventEnvelope]) -> None:
+        published_ids = {event.event_id for event in events}
+        self._events = [event for event in self._events if event.event_id not in published_ids]

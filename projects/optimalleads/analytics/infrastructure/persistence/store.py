@@ -14,6 +14,7 @@ class AnalyticsSnapshotStore(AnalyticsStorePort):
 
     async def upsert_snapshot(self, snapshot: Snapshot) -> None:
         await self._session.merge(snapshot_to_row(snapshot))
+        await self._session.commit()
 
     async def get_snapshot(self) -> Snapshot:
         row = await self._session.get(ProjectionRow, "snapshot")

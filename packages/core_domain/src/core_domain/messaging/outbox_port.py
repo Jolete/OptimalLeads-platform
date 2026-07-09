@@ -19,3 +19,6 @@ class OutboxPort(Protocol):
 
     async def drain(self) -> list[EventEnvelope]:
         ...
+
+    async def mark_published(self, events: list[EventEnvelope]) -> None:
+        ...

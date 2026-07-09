@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Callable
 
 from core_domain.messaging import CqrsMediator
-from core_infrastructure.composition_root.persistence_composition import build_broker, build_dispatcher
 from projects.optimalleads.analytics.infrastructure.persistence.factory import build_analytics_memory_store
 from projects.optimalleads.analytics.application.dto import IngestEventCommand, ReadSnapshotQuery
 from projects.optimalleads.analytics.application.handlers import IngestEventHandler, ReadSnapshotHandler
@@ -15,8 +14,6 @@ from projects.optimalleads.analytics.infrastructure.persistence.settings import 
 from core_infrastructure.persistence.persistence_factory import create_database_bootstrap
 from core_infrastructure.drivers.sqlserver.database_composition import bootstrap_sqlserver_database
 from core_infrastructure.services import OutboxWorker
-from projects.optimalleads.analytics.infrastructure.services.outbox_worker import AnalyticsOutboxWorker
-from projects.optimalleads.analytics.settings import get_settings
 
 
 @dataclass(slots=True)
@@ -71,11 +68,6 @@ async def get_analytics_runtime() -> AnalyticsRuntime:
     mediator.register_handler(IngestEventCommand, IngestEventHandler(IngestEventsUseCase(store)))
     mediator.register_handler(ReadSnapshotQuery, ReadSnapshotHandler(ReadSnapshotUseCase(store)))
 
-    app_settings = get_settings()
-    broker = build_broker(app_settings)
-    dispatcher = build_dispatcher(broker)
-    outbox_worker = AnalyticsOutboxWorker(store, dispatcher)
-
     _runtime = AnalyticsRuntime(
         business_database_url=settings.business_database_url,
         outbox_database_url=settings.business_database_url,
@@ -83,6 +75,6 @@ async def get_analytics_runtime() -> AnalyticsRuntime:
         events_database_url=settings.business_database_url,
         store_factory=lambda session: AnalyticsSnapshotStore(session),
         mediator=mediator,
-        outbox_worker=outbox_worker,
+        outbox_worker=None,
     )
     return _runtime

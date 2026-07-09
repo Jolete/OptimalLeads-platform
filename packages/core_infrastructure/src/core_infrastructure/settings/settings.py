@@ -10,6 +10,7 @@ class PersistenceSettings(BaseSettings):
 
     persistence_provider: Literal["memory", "sqlite", "sqlserver"]
     reset_database_on_startup: bool = False
+    outbox_flush_interval_seconds: float = 1.0
     business_database_url: str
     outbox_database_url: str | None = None
     audit_database_url: str | None = None

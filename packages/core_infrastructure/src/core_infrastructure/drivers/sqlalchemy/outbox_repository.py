@@ -54,16 +54,23 @@ class SqlAlchemyOutboxRepository(OutboxPort, Generic[RowType]):
         try:
             result = await session.execute(select(self._model_type))
             rows = result.scalars().all()
-            events = [self._event_factory(row) for row in rows]
-            await session.execute(delete(self._model_type))
-            if self._auto_commit:
-                await session.commit()
-            return events
+            return [self._event_factory(row) for row in rows]
         except Exception:
             import logging
 
             logging.getLogger(__name__).exception("sqlalchemy.outbox.drain.failed", extra={"model_type": self._model_type.__name__ if self._model_type is not None else None})
             raise
+
+    async def mark_published(self, events: list[EventEnvelope]) -> None:
+        if not events:
+            return
+        session = await self._resolve_session()
+        if self._model_type is None:
+            raise ValueError("model_type is required to mark outbox rows as published")
+
+        event_ids = [event.event_id for event in events]
+        await session.execute(delete(self._model_type).where(self._model_type.event_id.in_(event_ids)))
+        await session.commit()
 
     async def _resolve_session(self) -> AsyncSession:
         if self._session is not None:

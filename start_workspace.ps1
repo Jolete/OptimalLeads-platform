@@ -8,7 +8,8 @@ $jobs = @(
 	@{ Name = 'optimalleads-web'; Args = @('-m', 'uvicorn', 'bootstrap:app', '--port', '8080'); Log = Join-Path $logDir 'web.log' },
 	@{ Name = 'optimalleads-chat'; Args = @('-m', 'uvicorn', 'projects.optimalleads.chat.main:create_app', '--factory', '--port', '8001'); Log = Join-Path $logDir 'chat.log' },
 	@{ Name = 'optimalleads-leads'; Args = @('-m', 'uvicorn', 'projects.optimalleads.leads.main:create_app', '--factory', '--port', '8002'); Log = Join-Path $logDir 'leads.log' },
-	@{ Name = 'optimalleads-analytics'; Args = @('-m', 'uvicorn', 'projects.optimalleads.analytics.main:create_app', '--factory', '--port', '8003'); Log = Join-Path $logDir 'analytics.log' }
+	@{ Name = 'optimalleads-analytics'; Args = @('-m', 'uvicorn', 'projects.optimalleads.analytics.main:create_app', '--factory', '--port', '8003'); Log = Join-Path $logDir 'analytics.log' },
+	@{ Name = 'optimalleads-saga'; Args = @('-m', 'projects.optimalleads.saga.main'); Log = Join-Path $logDir 'saga.log' }
 )
 
 foreach ($job in $jobs) {
