@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .protocols import DeadLetterPublisher, EventDecoder, SagaEventHandler
+from .protocols import DeadLetterPublisher, EventDecoder, SagaAttemptRecorder, SagaEventHandler
 from .retry.protocols import RetryPolicy
 from .retry.config import BaseRetrySettings
 
@@ -50,6 +50,7 @@ class SagaBridgeResponsibilities:
     leads_retry_policy: RetryPolicy | None = None
     chat_dead_letter_publisher: DeadLetterPublisher | None = None
     leads_dead_letter_publisher: DeadLetterPublisher | None = None
+    attempt_recorder: SagaAttemptRecorder | None = None
 
 
 @dataclass(slots=True)

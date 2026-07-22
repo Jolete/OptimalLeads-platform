@@ -29,11 +29,10 @@ class BrokerDeadLetterPublisher:
                 },
             }
         )
-        async with self._broker:
-            await self._broker.publish(
-                message=dead_letter_event.model_dump(),
-                **{self._target_kind: self._target_value},
-            )
+        await self._broker.publish(
+            message=dead_letter_event.model_dump(),
+            **{self._target_kind: self._target_value},
+        )
         logger.error(
             "saga.bridge.dead_letter",
             extra={

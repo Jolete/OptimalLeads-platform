@@ -6,15 +6,15 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from core_infrastructure.settings.settings import PersistenceSettings
 from .constants import SAGA_ENV_FILE, SAGA_INTERNAL_SERVICE_PROTOCOL_GRPC, SAGA_INTERNAL_SERVICE_PROTOCOL_REST
 from .bridge.retry.config import ChatRetrySettings, LeadsRetrySettings
 
 
-class SagaSettings(BaseSettings):
+class SagaSettings(PersistenceSettings):
     model_config = SettingsConfigDict(env_file=SAGA_ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
     internal_service_protocol: Literal[SAGA_INTERNAL_SERVICE_PROTOCOL_REST, SAGA_INTERNAL_SERVICE_PROTOCOL_GRPC]
-    saga_database_url: str
     leads_api_base_url: str
     analytics_api_base_url: str
     leads_grpc_target: str

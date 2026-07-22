@@ -90,11 +90,18 @@ class SagaBridge:
         attempt = 1
 
         while True:
+            attempt_id = None
+            if self._responsibilities.attempt_recorder is not None:
+                attempt_id = await self._responsibilities.attempt_recorder.record_attempt_start(event, attempt)
             try:
                 await handler(event)
+                if attempt_id is not None:
+                    await self._responsibilities.attempt_recorder.record_attempt_finish(attempt_id, "success")
                 return
             except Exception as error:
                 last_error = error
+                if attempt_id is not None:
+                    await self._responsibilities.attempt_recorder.record_attempt_finish(attempt_id, "failed", str(error))
                 logger.exception(
                     "saga.bridge.route.failed",
                     extra={
@@ -151,6 +158,7 @@ def create_saga_bridge(
         chat_broker,
         leads_broker,
         SagaBridgeResponsibilities(
+            attempt_recorder=responsibilities.attempt_recorder,
             decode_event=responsibilities.decode_event,
             route_chat_event=responsibilities.route_chat_event,
             route_leads_event=responsibilities.route_leads_event,
