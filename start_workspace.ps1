@@ -65,14 +65,20 @@ $serviceCommands = @(
 	@{ Name = 'saga'; Port = $null; Command = "Set-Location '$workspaceRoot'; & '$pythonExe' -m projects.optimalleads.saga.main *>> '$logDir\saga.log'" }
 )
 
+$launchedServices = @()
+
 foreach ($service in $serviceCommands) {
 	if ($Services -notcontains $service.Name) {
 		continue
 	}
-	Start-Process -WindowStyle Normal -FilePath powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $service.Command) -WorkingDirectory $workspaceRoot | Out-Null
-	if ($null -ne $service.Port) {
-		Wait-ForPort -Port $service.Port
+	$launchedServices += Start-Process -WindowStyle Normal -PassThru -FilePath powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $service.Command) -WorkingDirectory $workspaceRoot
+}
+
+foreach ($service in $serviceCommands) {
+	if ($Services -notcontains $service.Name -or $null -eq $service.Port) {
+		continue
 	}
+	Wait-ForPort -Port $service.Port
 }
 
 Start-Process 'http://127.0.0.1:8080/'

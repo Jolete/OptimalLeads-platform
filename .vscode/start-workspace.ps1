@@ -102,6 +102,8 @@ $serviceCommands = @(
 	@{ Name = 'saga'; Port = $null; Args = @('-m', 'projects.optimalleads.saga.main'); StdOut = Join-Path $workspaceFolder 'logs\saga.out.log'; StdErr = Join-Path $workspaceFolder 'logs\saga.err.log' }
 )
 
+$launchedServices = @()
+
 foreach ($service in $serviceCommands) {
 	if ($Services -notcontains $service.Name) {
 		continue
@@ -109,11 +111,14 @@ foreach ($service in $serviceCommands) {
 	if ($null -ne $service.Port) {
 		Stop-ListenerOnPort -Port $service.Port
 		Wait-ForPortFree -Port $service.Port
-		Start-Sleep -Seconds 1
 	}
-		Start-Process -WindowStyle Normal -FilePath $pythonExe -ArgumentList $service.Args -WorkingDirectory $workspaceFolder -RedirectStandardOutput $service.StdOut -RedirectStandardError $service.StdErr
-	if ($null -ne $service.Port) {
-		Wait-ForPort -Port $service.Port
+	$launchedServices += Start-Process -WindowStyle Normal -PassThru -FilePath $pythonExe -ArgumentList $service.Args -WorkingDirectory $workspaceFolder -RedirectStandardOutput $service.StdOut -RedirectStandardError $service.StdErr
+}
+
+foreach ($service in $serviceCommands) {
+	if ($Services -notcontains $service.Name -or $null -eq $service.Port) {
+		continue
 	}
+	Wait-ForPort -Port $service.Port
 }
 Start-Process 'http://127.0.0.1:8080/'
