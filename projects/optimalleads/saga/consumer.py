@@ -118,6 +118,7 @@ async def build_saga_consumer() -> OptimalLeadsSagaConsumer:
             route_leads_event=saga.handle,
             chat_retry_policy=runtime.chat_retry_policy,
             leads_retry_policy=runtime.leads_retry_policy,
+            attempt_recorder=state_repository,
         ),
     )
 

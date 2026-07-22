@@ -2,7 +2,8 @@ $workspaceRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.
 $serviceRoots = @(
         @{ Name = 'chat'; Path = Join-Path $workspaceRoot 'projects\optimalleads\chat' },
         @{ Name = 'leads'; Path = Join-Path $workspaceRoot 'projects\optimalleads\leads' },
-        @{ Name = 'analytics'; Path = Join-Path $workspaceRoot 'projects\optimalleads\analytics' }
+        @{ Name = 'analytics'; Path = Join-Path $workspaceRoot 'projects\optimalleads\analytics' },
+        @{ Name = 'saga'; Path = Join-Path $workspaceRoot 'projects\optimalleads\saga' }
 )
 
 foreach ($service in $serviceRoots) {
