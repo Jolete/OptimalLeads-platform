@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import logging
 
-import grpc
+from typing import TYPE_CHECKING, Any
+
+try:
+    import grpc  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - optional dependency in REST-only environments
+    grpc = None
+
+if TYPE_CHECKING:
+    import grpc as grpc_type  # type: ignore[import-not-found]
 
 from projects.optimalleads.leads.application.dto import CreateLeadCommand
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
@@ -14,7 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class LeadsInternalService(lead_internal_service_pb2_grpc.LeadsInternalServiceServicer):
-    async def CreateLeadFromConversation(self, request, context):
+    async def CreateLeadFromConversation(self, request: Any, context: Any):
+        if grpc is None:
+            raise RuntimeError("gRPC support is not installed")
+
         runtime = await get_leads_runtime()
         if runtime.mediator is None:
             await context.abort(grpc.StatusCode.UNAVAILABLE, "CQRS mediator is not available")
@@ -34,7 +45,10 @@ class LeadsInternalService(lead_internal_service_pb2_grpc.LeadsInternalServiceSe
         )
 
 
-async def create_grpc_server(host: str, port: int) -> grpc.aio.Server:
+async def create_grpc_server(host: str, port: int) -> "grpc_type.aio.Server":
+    if grpc is None:
+        raise RuntimeError("gRPC support is not installed")
+
     server = grpc.aio.server()
     lead_internal_service_pb2_grpc.add_LeadsInternalServiceServicer_to_server(LeadsInternalService(), server)
     server.add_insecure_port(f"{host}:{port}")

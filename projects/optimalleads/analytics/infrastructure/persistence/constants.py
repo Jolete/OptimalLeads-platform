@@ -4,6 +4,7 @@ ANALYTICS_ENV_FILE = "projects/optimalleads/analytics/.env"
 
 ANALYTICS_SERVICE_NAME = "optimalleads-analytics"
 ANALYTICS_TITLE = "OptimalLeads Analytics"
+ANALYTICS_INTERNAL_INGEST_EVENT_PATH = "/internal/events"
 
 
 ANALYTICS_PROJECTION_TABLE_NAME = "projections"

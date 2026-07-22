@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from core_domain import ValidationError
 from projects.optimalleads.leads.application.dto import AdvanceLeadStageCommand, CreateLeadCommand, DeleteLeadCommand, GetLeadQuery, ListLeadsQuery, UpdateLeadCommand
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
+from projects.optimalleads.leads.infrastructure.persistence.constants import LEADS_INTERNAL_CREATE_FROM_CONVERSATION_PATH
 from projects.optimalleads.leads.presentation.contracts import CreateLeadFromConversationRequest
 
 router = APIRouter(tags=["leads"])
@@ -88,7 +89,7 @@ async def create_lead(payload: CreateLeadRequest) -> dict[str, object]:
     return _serialize_lead(lead)
 
 
-@router.post("/internal/leads/from-conversation")
+@router.post(LEADS_INTERNAL_CREATE_FROM_CONVERSATION_PATH)
 async def create_lead_from_conversation(payload: InternalCreateLeadRequest) -> dict[str, object]:
     logger.info(
         "leads.internal.create.request",

@@ -10,7 +10,6 @@ from projects.optimalleads.leads.settings import get_settings
 from telemetry import configure_http_tracing, configure_telemetry
 from projects.optimalleads.leads.infrastructure.persistence.bootstrap import get_leads_runtime
 from projects.optimalleads.leads.infrastructure.persistence.constants import LEADS_SERVICE_NAME, LEADS_TITLE
-from projects.optimalleads.leads.presentation.grpc.server import create_grpc_server
 from core_infrastructure.services import run_periodic_outbox_flush
 from projects.optimalleads.leads.presentation.api.router import router as leads_router
 
@@ -27,8 +26,11 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def startup() -> None:
+        app.state.business_database_url = settings.business_database_url
         runtime = await get_leads_runtime()
         if settings.internal_service_protocol == "grpc":
+            from projects.optimalleads.leads.presentation.grpc.server import create_grpc_server
+
             app.state.grpc_server = await create_grpc_server(settings.grpc_listen_host, settings.grpc_listen_port)
         if runtime.outbox_worker is not None:
             app.state.outbox_task = asyncio.create_task(

@@ -1,9 +1,20 @@
 @host = http://127.0.0.1:8002
 @json = application/json
 @leadId = 48fd433f-32c6-4dba-833e-38fa2c11396b
+@conversationId = 03b83aae-2211-4a1c-9e91-79aa6514c2cf
 
 ### Health
 GET {{host}}/health
+
+### Internal create lead from conversation
+POST {{host}}/internal/leads/from-conversation
+Content-Type: {{json}}
+
+{
+  "conversation_id": "{{conversationId}}",
+  "title": "Lead from conversation via internal endpoint",
+  "correlation_id": "chat-005"
+}
 
 ### Create lead 1
 POST {{host}}/leads

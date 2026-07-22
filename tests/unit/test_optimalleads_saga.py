@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from core_domain import EventEnvelope, EventKind
-from projects.optimalleads.saga.process_manager import OptimalLeadsSaga
+from projects.optimalleads.saga.process_manager import OptimalLeadsSaga, SagaProgress, SagaStatus
 
 
 class FakeAnalyticsClient:
@@ -26,12 +26,19 @@ class FakeLeadClient:
 class FakeStateRepository:
     def __init__(self) -> None:
         self.processed: set[str] = set()
+        self.progress_by_correlation: dict[str, SagaProgress] = {}
 
     async def has_processed(self, event_id: str) -> bool:
         return event_id in self.processed
 
     async def mark_processed(self, event: EventEnvelope) -> None:
         self.processed.add(event.event_id)
+
+    async def load_progress(self, correlation_id: str) -> SagaProgress | None:
+        return self.progress_by_correlation.get(correlation_id)
+
+    async def save_progress(self, progress: SagaProgress) -> None:
+        self.progress_by_correlation[progress.correlation_id] = progress
 
 
 def make_event(event_name: str, payload: dict[str, object]) -> EventEnvelope:
@@ -97,3 +104,19 @@ async def test_processed_events_are_checked_in_saga_state_repository() -> None:
     await saga.handle(event)
 
     assert analytics_client.events == []
+
+
+async def test_conversation_created_persists_formal_progress_state() -> None:
+    leads_client = FakeLeadClient()
+    analytics_client = FakeAnalyticsClient()
+    state_repository = FakeStateRepository()
+    saga = OptimalLeadsSaga(leads_client, analytics_client, state_repository=state_repository)
+    event = make_event("ConversationCreated", {"conversation_id": "conversation-1", "title": "ACME"})
+
+    await saga.handle(event)
+
+    progress = state_repository.progress_by_correlation["correlation-1"]
+    assert progress.status == SagaStatus.LEAD_CREATED
+    assert progress.current_phase == "conversation-created:lead-created"
+    assert "conversation-created:analytics-ingested" in progress.completed_steps
+    assert "conversation-created:lead-created" in progress.completed_steps

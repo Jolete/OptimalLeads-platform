@@ -1,0 +1,89 @@
+@hostChat = http://127.0.0.1:8001
+@hostLeads = http://127.0.0.1:8002
+@hostAnalytics = http://127.0.0.1:8003
+@json = application/json
+@conversationId = 03b83aae-2211-4a1c-9e91-79aa6514c2cf
+
+### Saga smoke notes
+# Saga has no direct HTTP endpoints.
+# Use these requests to exercise the flow that saga consumes:
+# chat -> saga -> leads -> analytics
+
+### Chat health
+GET {{hostChat}}/health
+
+### Create conversation to emit ConversationCreated
+POST {{hostChat}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Saga smoke test conversation",
+  "correlation_id": "chat-saga-001"
+}
+
+### Chat outbox entries
+GET {{hostChat}}/outbox
+
+### Flush chat outbox
+POST {{hostChat}}/outbox/flush
+
+### Leads internal create from conversation
+POST {{hostLeads}}/internal/leads/from-conversation
+Content-Type: {{json}}
+
+{
+  "conversation_id": "{{conversationId}}",
+  "title": "Saga smoke test lead",
+  "correlation_id": "chat-saga-001"
+}
+
+### Leads health
+GET {{hostLeads}}/health
+
+### Leads outbox entries
+GET {{hostLeads}}/outbox
+
+### Flush leads outbox
+POST {{hostLeads}}/outbox/flush
+
+### Analytics health
+GET {{hostAnalytics}}/health
+
+### Analytics snapshot
+GET {{hostAnalytics}}/snapshot
+
+### Analytics ingest ConversationCreated event
+POST {{hostAnalytics}}/ingest
+Content-Type: {{json}}
+
+{
+  "event_id": "evt-saga-001",
+  "aggregate_id": "{{conversationId}}",
+  "event_name": "ConversationCreated",
+  "event_kind": "domain",
+  "correlation_id": "chat-saga-001",
+  "causation_id": null,
+  "occurred_at": "2026-07-01T00:00:00Z",
+  "payload": {
+    "conversation_id": "{{conversationId}}",
+    "title": "Saga smoke test conversation"
+  }
+}
+
+### Analytics ingest LeadCreated event
+POST {{hostAnalytics}}/ingest
+Content-Type: {{json}}
+
+{
+  "event_id": "evt-saga-002",
+  "aggregate_id": "lead-saga-001",
+  "event_name": "LeadCreated",
+  "event_kind": "domain",
+  "correlation_id": "chat-saga-001",
+  "causation_id": null,
+  "occurred_at": "2026-07-01T00:00:00Z",
+  "payload": {
+    "lead_id": "lead-saga-001",
+    "name": "Saga smoke test lead"
+  }
+}

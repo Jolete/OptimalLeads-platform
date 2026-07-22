@@ -5,6 +5,15 @@
 ### Health
 GET {{host}}/health
 
+### Internal flow smoke test
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat internal flow smoke test",
+  "correlation_id": "chat-internal-001"
+}
+
 ### Create conversation 1
 POST {{host}}/conversations
 Content-Type: {{json}}
@@ -50,6 +59,15 @@ Content-Type: {{json}}
   "correlation_id": "chat-005"
 }
 
+### Create conversation 6
+POST {{host}}/conversations
+Content-Type: {{json}}
+
+{
+  "title": "Chat CQRS 6",
+  "correlation_id": "chat-006"
+}
+
 ### Get all conversations
 GET {{host}}/conversations
 
@@ -85,6 +103,9 @@ GET {{host}}/outbox
 
 ### Flush outbox
 POST {{host}}/outbox/flush
+
+### Internal outbox verification
+GET {{host}}/outbox
 
 ### Delete conversation by conversation_id (conversation_id is the resource id)
 DELETE {{host}}/conversations/{{conversationId}}

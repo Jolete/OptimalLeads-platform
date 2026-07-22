@@ -9,7 +9,7 @@ import httpx
 from core_domain import EventEnvelope
 from projects.optimalleads.analytics.presentation.contracts import IngestEventRequest as AnalyticsIngestEventRequest
 from projects.optimalleads.leads.presentation.contracts import CreateLeadFromConversationRequest as LeadsCreateLeadFromConversationRequest
-from projects.optimalleads.saga.constants import SAGA_INTERNAL_SERVICE_PROTOCOL_GRPC, SAGA_INTERNAL_SERVICE_PROTOCOL_REST
+from projects.optimalleads.saga.constants import SAGA_INTERNAL_ANALYTICS_INGEST_EVENT_PATH, SAGA_INTERNAL_LEADS_CREATE_FROM_CONVERSATION_PATH, SAGA_INTERNAL_SERVICE_PROTOCOL_GRPC, SAGA_INTERNAL_SERVICE_PROTOCOL_REST
 from projects.optimalleads.saga.settings import SagaSettings
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class LeadsRestClient:
             correlation_id=correlation_id,
         )
         async with httpx.AsyncClient(base_url=self._base_url, timeout=10.0) as client:
-            response = await client.post("/internal/leads/from-conversation", json=payload.model_dump())
+            response = await client.post(SAGA_INTERNAL_LEADS_CREATE_FROM_CONVERSATION_PATH, json=payload.model_dump())
             response.raise_for_status()
             return response.json()
 
@@ -54,7 +54,7 @@ class AnalyticsRestClient:
     async def ingest_event(self, event: EventEnvelope) -> dict[str, object]:
         payload = AnalyticsIngestEventRequest.model_validate(event.model_dump(mode="json"))
         async with httpx.AsyncClient(base_url=self._base_url, timeout=10.0) as client:
-            response = await client.post("/internal/events", json=payload.model_dump())
+            response = await client.post(SAGA_INTERNAL_ANALYTICS_INGEST_EVENT_PATH, json=payload.model_dump())
             response.raise_for_status()
             return response.json()
 

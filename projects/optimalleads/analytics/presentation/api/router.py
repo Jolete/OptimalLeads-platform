@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from core_domain import ValidationBehavior, ValidationError
 from projects.optimalleads.analytics.application.dto import IngestEventCommand, ReadSnapshotQuery
+from projects.optimalleads.analytics.infrastructure.persistence.constants import ANALYTICS_INTERNAL_INGEST_EVENT_PATH
 from projects.optimalleads.analytics.infrastructure.persistence.bootstrap import get_analytics_runtime
 from projects.optimalleads.analytics.presentation.contracts import IngestEventRequest
 
@@ -62,7 +63,7 @@ async def _ingest(event: IngestEventRequest) -> dict[str, str]:
     return {"status": "ingested"}
 
 
-@router.post("/internal/events")
+@router.post(ANALYTICS_INTERNAL_INGEST_EVENT_PATH)
 async def ingest_internal(event: IngestEventRequest) -> dict[str, str]:
     return await _ingest(event)
 

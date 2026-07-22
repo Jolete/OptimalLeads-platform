@@ -184,10 +184,13 @@ En OptimalLeads, la SAGA no ha de viure dins del `handler` del microservei que o
 2. Chat persisteix la conversa.
 3. Chat crea `ConversationCreated` i el desa a outbox.
 4. L'outbox worker publica l'event al broker de Chat.
-5. Un consumidor d'integració o un servei SAGA escolta `ConversationCreated`.
-6. Aquest consumidor crea i envia `CreateLeadCommand` a Leads.
-7. Leads persisteix el lead i publica `LeadCreated`.
-8. Analytics consumeix `ConversationCreated` i `LeadCreated` i actualitza el snapshot.
+5. El bridge consumeix `ConversationCreated` des del canal d'entrada neutre.
+6. El SAGA / process manager rep l'event, actualitza l'estat formal i decideix el següent pas.
+7. El SAGA crida Leads per REST o gRPC intern per crear el lead.
+8. Leads persisteix el lead i publica `LeadCreated`.
+9. Analytics consumeix `ConversationCreated` i `LeadCreated` i actualitza el snapshot.
+10. Si hi ha una fallada temporal, el bridge reencola el missatge a la retry queue / topic del flux.
+11. Si s'esgota el límit d'intents, el bridge el deriva a la DLQ del flux corresponent.
 
 ### Qui crea `CreateLeadCommand`
 
@@ -196,7 +199,7 @@ No el crea Chat. Tampoc l'outbox. El crea el component de coordinació:
 - un microservei SAGA dedicat
 - o un consumer d'integració dins d'un servei específic d'orquestració
 
-Aquest component pot fer la crida a Leads per HTTP/CQRS intern o bé publicar un event cap al broker de Leads, segons el disseny triat.
+Aquest component ha de fer, per defecte, la crida a Leads per HTTP intern o gRPC. Només ha de publicar cap al broker de Leads si el flux està dissenyat explícitament com a asíncron i el mateix broker de Leads és part de la topologia triada.
 
 ### Amb brokers diferents per microservei
 
@@ -204,7 +207,7 @@ Si cada microservei té el seu broker, el patró normal és:
 
 - Chat publica al seu broker
 - el SAGA consumeix d'aquest broker
-- el SAGA executa el pas següent contra Leads o publica al broker de Leads
+- el SAGA executa el pas següent contra Leads per HTTP intern o gRPC
 - Analytics pot consumir d'un broker compartit, o bé rebre events replicats per un bridge
 
 Això vol dir que, si hi ha brokers diferents, cal una peça intermèdia que faci de pont. Aquesta peça pot ser:
@@ -212,6 +215,60 @@ Això vol dir que, si hi ha brokers diferents, cal una peça intermèdia que fac
 - un SAGA service central
 - un bridge de missatgeria
 - un process manager
+
+### Bridge de missatgeria
+
+El bridge no és un quart cervell ni una capa de negoci.
+
+Serveix per:
+
+- declarar les rutes d'entrada neutres dels canals (`chat_inbound`, `leads_inbound`)
+- concentrar el wiring dels brokers
+- aplicar retry operatiu i dead-letter
+- traduir missatges de broker a `EventEnvelope`
+- entregar events al SAGA / process manager
+- derivar a DLQ real per flux quan el retry supera el límit
+
+No ha de contenir semàntica de negoci. La semàntica la posa el SAGA.
+
+### Dibuix representatiu
+
+```mermaid
+flowchart LR
+    Chat[Chat Service] -->|domain event| ChatOutbox[(Outbox)]
+    ChatOutbox -->|publish| ChatBroker[(Chat Broker)]
+    ChatBroker -->|consume| Bridge[Bridge]
+
+    Bridge -->|route| Saga[SAGA / Process Manager]
+    Saga -->|REST o gRPC intern| Leads[Leads Service]
+    Saga -->|event intern| Analytics[Analytics Service]
+
+    Leads -->|domain event| LeadsOutbox[(Outbox)]
+    LeadsOutbox -->|publish| LeadsBroker[(Leads Broker)]
+    LeadsBroker -->|consume| Bridge
+
+    Bridge -->|retry topic / delayed requeue| Retry[(Retry Queue / Topic)]
+    Retry -->|reconsume| Bridge
+    Bridge -->|dead-letter| DLQ[(Dead Letter Queue / Topic)]
+```
+
+### Què representa
+
+- `Outbox`: persistència fiable abans de publicar.
+- `Bridge`: entrada neutra, reintents i dead-letter per flux.
+- `SAGA / Process Manager`: decideix el pas següent i guarda l'estat formal.
+- `Retry Queue / Topic`: missatges que encara poden tornar-se a provar.
+- `DLQ`: missatges que ja han excedit el límit d'intents o que requereixen revisió manual.
+
+### Responsabilitats dels components
+
+- `Chat`: crea converses i publica events.
+- `Leads`: crea i modifica leads i publica events.
+- `Analytics`: consumeix events i manté snapshots.
+- `Bridge`: wiring, rutes d'entrada, retry i dead-letter.
+- `SAGA / Orchestrator`: decideix el flux, fa compensacions i executa els passos entre serveis.
+- `Process manager`: guarda el progrés formal de la saga, l'estat actual i el darrer error.
+- `OutboxWorker`: publica de forma fiable els events persistits.
 
 ### Lloc de la lògica
 
@@ -300,7 +357,20 @@ Si una etapa falla:
 
 - la SAGA pot reintentar
 - pot compensar passos anteriors si el cas d'ús ho necessita
-- pot deixar l'event en una cua de reprocessament o dead-letter
+- pot deixar l'event en una cua de reprocessament o dead-letter per flux
+
+### Estat formal de SAGA
+
+El `process manager` no ha de guardar només una llista de passos completats.
+
+Ha de persistir, com a mínim:
+
+- `status`: `received`, `analytics_ingested`, `lead_requested`, `lead_created`, `failed`
+- `current_phase`: el pas concret en què està el flux
+- `completed_steps`: traça auditada dels passos executats
+- `last_error`: últim error observat
+
+Això permet saber si la saga ha avançat, si s'ha bloquejat i en quin punt exactament.
 
 ### Cas amb el mateix broker
 
@@ -318,6 +388,22 @@ En aquest cas, el broker no fa de coordinador: només és la via de transport.
 ### Si fem servir el mateix broker
 
 Si tots els microserveis publiquen i consumeixen sobre el mateix broker o sobre el mateix bus lògic, la SAGA és més simple:
+
+- un únic punt de consum pot escoltar els canals d'entrada
+- el bridge manté el routing operatiu
+- el SAGA manté la decisió funcional
+
+### Flux actual recomanat
+
+1. Chat persisteix l'agregat i posa `ConversationCreated` a outbox.
+2. OutboxWorker publica l'event al broker de Chat.
+3. El bridge escolta el canal d'entrada `chat_inbound`.
+4. El SAGA rep l'event i decideix si cal crear Lead.
+5. El SAGA crida Leads per REST o gRPC intern.
+6. Leads publica el seu event de resultat.
+7. El bridge escolta `leads_inbound`.
+8. Analytics ingestia l'event i actualitza el snapshot.
+9. Si hi ha error, el bridge aplica retry operatiu i, si cal, dead-letter.
 
 - no cal fer bridge entre brokers
 - el process manager només necessita subscriure's als topics/queues rellevants
@@ -428,13 +514,16 @@ Això és més complex, però pot servir per simular una arquitectura realment d
 - Idempotència i retry complet de l'outbox
 - Migracions SQL Server i flux d'operació més madur
 
-### Ordre recomanat per acabar Chat
+### Estat i ordre recomanat per acabar Chat
 
-1. Tancar errors i models d'aplicació.
-2. Fer coherent la transacció save + outbox.
-3. Separar més el router de la coordinació d'ús.
-4. Afegir tests mínims per cada capa.
-5. Endurir observabilitat.
+- Ja està fet a nivell de base: estructura per capes, settings, broker factory, models, repository, unit of work, casos d'ús, outbox, worker, health i landing.
+- Encara queda feina parcial: tancar errors i models d'aplicació, fer coherent la transacció save + outbox, separar més el router de la coordinació d'ús, afegir tests mínims per capa i endurir observabilitat.
+- Ordre recomanat:
+    1. Tancar errors i models d'aplicació.
+    2. Fer coherent la transacció save + outbox.
+    3. Separar més el router de la coordinació d'ús.
+    4. Afegir tests mínims per cada capa.
+    5. Endurir observabilitat.
 
 ## Què no volem
 
